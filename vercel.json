@@ -16,16 +16,16 @@
       "dest": "/api/$1"
     },
     {
-      "src": "/trip/(.*)",
-      "dest": "/public/trip.html"
-    },
-    {
       "src": "/css/(.*)",
       "dest": "/public/css/$1"
     },
     {
       "src": "/js/(.*)",
       "dest": "/public/js/$1"
+    },
+    {
+      "src": "/trip/(.*)",
+      "dest": "/public/trip.html"
     },
     {
       "src": "/(.*)",
