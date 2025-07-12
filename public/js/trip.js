@@ -1,7 +1,6 @@
 // Trip page JavaScript
 class TripPage {
     constructor() {
-        // Use hardcoded values for browser environment
         this.supabaseUrl = 'https://idasmhlbftmhxibrjqjw.supabase.co';
         this.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkYXNtaGxiZnRtaHhpYnJqcWp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzNDA2NzMsImV4cCI6MjA2NzkxNjY3M30.aWcHB8Aalo4_1APEjXs-3Ag6dOMbomr95T_Tj4BUUdc';
         this.supabase = null;
@@ -13,7 +12,6 @@ class TripPage {
     
     async init() {
         try {
-            // Initialize Supabase
             this.supabase = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
             
             if (!this.tripId) {
@@ -21,7 +19,6 @@ class TripPage {
                 return;
             }
             
-            // Load trip data
             await this.loadTripData();
             
         } catch (error) {
@@ -38,7 +35,6 @@ class TripPage {
     
     async loadTripData() {
         try {
-            // Fetch trip data from Supabase
             const { data: trip, error: tripError } = await this.supabase
                 .from('trips')
                 .select('*')
@@ -50,7 +46,6 @@ class TripPage {
                 return;
             }
             
-            // Fetch categories
             const { data: categories, error: categoriesError } = await this.supabase
                 .from('trip_categories')
                 .select('*')
@@ -61,7 +56,6 @@ class TripPage {
                 console.error('Error loading categories:', categoriesError);
             }
             
-            // Fetch route data
             const { data: routeData, error: routeError } = await this.supabase
                 .from('trip_routes')
                 .select('*')
@@ -72,7 +66,6 @@ class TripPage {
                 console.error('Error loading route data:', routeError);
             }
             
-            // Display trip data
             this.displayTrip(trip, categories || [], routeData);
             
         } catch (error) {
@@ -82,14 +75,12 @@ class TripPage {
     }
     
     displayTrip(trip, categories, routeData) {
-        // Hide loading, show content
         const loading = document.getElementById('loading');
         const content = document.getElementById('trip-content');
         
         if (loading) loading.style.display = 'none';
         if (content) content.style.display = 'block';
         
-        // Update header
         const title = document.getElementById('trip-title');
         const date = document.getElementById('trip-date');
         const miles = document.getElementById('miles-walked');
@@ -100,10 +91,8 @@ class TripPage {
         if (miles) miles.textContent = trip.miles_walked ? trip.miles_walked.toFixed(1) : '0';
         if (photos) photos.textContent = trip.photo_count || categories.length;
         
-        // Display categories
         this.displayCategories(categories);
         
-        // Display map if route data exists
         if (routeData && routeData.route_data && routeData.route_data.length > 0) {
             this.displayMap(routeData.route_data);
         }
@@ -119,9 +108,10 @@ class TripPage {
             const card = document.createElement('div');
             card.className = 'category-card';
             
-            const imageHtml = category.photo_url ? 
-                `<img src="${category.photo_url}" alt="${category.category_name}" class="category-image" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'no-image\'>📸</div>'">` :
-                '<div class="no-image">📸</div>';
+            let imageHtml = '<div class="no-image">📸</div>';
+            if (category.photo_url) {
+                imageHtml = `<img src="${category.photo_url}" alt="${category.category_name}" class="category-image" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'no-image\'>📸</div>'">`;
+            }
             
             card.innerHTML = `
                 <div class="category-image-container">
@@ -145,7 +135,6 @@ class TripPage {
         
         mapSection.style.display = 'block';
         
-        // Initialize map after a short delay to ensure container is ready
         setTimeout(() => {
             this.initMap(routeData);
         }, 100);
@@ -160,7 +149,6 @@ class TripPage {
             return;
         }
         
-        // Parse route data (assuming it's an array of coordinates)
         let coordinates = [];
         if (Array.isArray(routeData)) {
             coordinates = routeData;
@@ -174,18 +162,13 @@ class TripPage {
         }
         
         try {
-            // Calculate bounds
             const bounds = L.latLngBounds(coordinates);
-            
-            // Create map
             this.map = L.map('map').fitBounds(bounds);
             
-            // Add tile layer
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(this.map);
             
-            // Add route line
             if (coordinates.length > 1) {
                 L.polyline(coordinates, {
                     color: '#667eea',
@@ -194,7 +177,6 @@ class TripPage {
                 }).addTo(this.map);
             }
             
-            // Add markers for start and end points
             if (coordinates.length > 0) {
                 L.marker(coordinates[0]).addTo(this.map)
                     .bindPopup('Start')
@@ -237,7 +219,6 @@ class TripPage {
     }
 }
 
-// Initialize trip page when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     new TripPage();
 });
