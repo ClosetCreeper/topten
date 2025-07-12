@@ -1,7 +1,8 @@
 {
   "rewrites": [
     { "source": "/trip/:tripId", "destination": "/trip.html" },
-    { "source": "/api/create-trip", "destination": "/api/create-trip.js" }
+    { "source": "/api/create-trip", "destination": "/api/create-trip.js" },
+    { "source": "/api/test", "destination": "/api/test.js" }
   ],
   "headers": [
     {
@@ -14,4 +15,4 @@
       ]
     }
   ]
-} 
+}
