@@ -454,6 +454,57 @@
         </div>
       `;
     }
+
+      function displayTrip(trip) {
+  const content = document.getElementById('content');
+
+  const tripHTML = `
+    <div class="trip-card">
+      <div class="trip-header">
+        <div>
+          <h2 class="trip-title">${trip.tripName}</h2>
+          <div class="trip-date">${new Date(trip.tripDate).toLocaleDateString()}</div>
+        </div>
+        <div class="trip-id">Trip ID: ${trip.tripId}</div>
+      </div>
+      <div class="trip-stats">
+        <div class="stat-card">
+          <div class="stat-number">${trip.milesWalked}</div>
+          <div class="stat-label">Miles Walked</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">${trip.photoCount}</div>
+          <div class="stat-label">Photos</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="categories-section">
+      <h3 class="section-title">Trip Categories</h3>
+      <div class="categories-grid">
+        ${trip.categories.map((category, index) => `
+          <div class="category-card">
+            <div class="carousel-container" id="carousel-${index}">
+              <div class="carousel-track">
+                ${category.photoURLs.map(photo => `
+                  <img class="carousel-image" src="${photo}" alt="Category Photo" />
+                `).join('')}
+              </div>
+              <div class="image-counter">${category.photoURLs.length} images</div>
+            </div>
+            <div class="category-content">
+              <div class="category-name">${category.categoryName}</div>
+              <div class="category-location">${category.location}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  content.innerHTML = tripHTML;
+}
+
       
     function getTripIdFromUrl() {
       const pathParts = window.location.pathname.split('/');
