@@ -456,55 +456,113 @@
     }
 
     function displayTrip(trip) {
-        const content = document.getElementById('content');
+  const content = document.getElementById('content');
+  content.innerHTML = '';
 
-        const tripHTML = `
-        <div class="trip-card">
-          <div class="trip-header">
-            <div>
-              <h2 class="trip-title">${trip.tripName}</h2>
-              <div class="trip-date">${new Date(trip.tripDate).toLocaleDateString()}</div>
-            </div>
-            <div class="trip-id">Trip ID: ${trip.tripId}</div>
-          </div>
-          <div class="trip-stats">
-            <div class="stat-card">
-              <div class="stat-number">${trip.milesWalked}</div>
-              <div class="stat-label">Miles Walked</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number">${trip.photoCount}</div>
-              <div class="stat-label">Photos</div>
-            </div>
-          </div>
-        </div>
-    
-        <div class="categories-section">
-          <h3 class="section-title">Trip Categories</h3>
-          <div class="categories-grid">
-            ${trip.categories.map((category, index) => `
-              <div class="category-card">
-                <div class="carousel-container" id="carousel-${index}">
-                  <div class="carousel-track">
-                    ${category.photoURLs.map(photo => `
-                      <img class="carousel-image" src="${photo}" alt="Category Photo" />
-                    `).join('')}
-                  </div>
-                  <div class="image-counter">${category.photoURLs.length} images</div>
-                </div>
-                <div class="category-content">
-                  <div class="category-name">${category.categoryName}</div>
-                  <div class="category-location">${category.location}</div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    
-      content.innerHTML = tripHTML;
+  const card = document.createElement('div');
+  card.className = 'trip-card';
+
+  // Header section
+  const header = document.createElement('div');
+  header.className = 'trip-header';
+
+  const title = document.createElement('div');
+  title.className = 'trip-title';
+  title.textContent = trip.tripName;
+
+  const date = document.createElement('div');
+  date.className = 'trip-date';
+  date.textContent = new Date(trip.tripDate).toLocaleDateString();
+
+  header.appendChild(title);
+  header.appendChild(date);
+
+  // Stats section
+  const stats = document.createElement('div');
+  stats.className = 'trip-stats';
+
+  stats.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-number">${trip.milesWalked.toFixed(1)} mi</div>
+      <div class="stat-label">Miles Walked</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">${trip.photoCount}</div>
+      <div class="stat-label">Photos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">${trip.categories.length}</div>
+      <div class="stat-label">Categories</div>
+    </div>
+  `;
+
+  // Categories section
+  const catSection = document.createElement('div');
+  catSection.className = 'categories-section';
+
+  const sectionTitle = document.createElement('h2');
+  sectionTitle.className = 'section-title';
+  sectionTitle.textContent = 'Trip Highlights';
+
+  const grid = document.createElement('div');
+  grid.className = 'categories-grid';
+
+  trip.categories.forEach((cat, index) => {
+    const catCard = document.createElement('div');
+    catCard.className = 'category-card';
+
+    // Carousel
+    const carouselContainer = document.createElement('div');
+    carouselContainer.className = 'carousel-container';
+    carouselContainer.id = `carousel-${index}`;
+
+    const track = document.createElement('div');
+    track.className = 'carousel-track';
+
+    cat.photoURLs.forEach((url, i) => {
+      const img = document.createElement('img');
+      img.className = 'carousel-image';
+      img.src = url;
+      img.alt = `Photo ${i + 1}`;
+      track.appendChild(img);
+    });
+
+    carouselContainer.appendChild(track);
+
+    const imageCounter = document.createElement('div');
+    imageCounter.className = 'image-counter';
+    imageCounter.textContent = `${cat.photoURLs.length} photo${cat.photoURLs.length > 1 ? 's' : ''}`;
+    carouselContainer.appendChild(imageCounter);
+
+    // Content
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'category-content';
+
+    const name = document.createElement('div');
+    name.className = 'category-name';
+    name.textContent = cat.categoryName;
+
+    const loc = document.createElement('div');
+    loc.className = 'category-location';
+    loc.textContent = cat.location;
+
+    contentDiv.appendChild(name);
+    contentDiv.appendChild(loc);
+
+    catCard.appendChild(carouselContainer);
+    catCard.appendChild(contentDiv);
+    grid.appendChild(catCard);
+  });
+
+  catSection.appendChild(sectionTitle);
+  catSection.appendChild(grid);
+
+  // Assemble everything
+  card.appendChild(header);
+  card.appendChild(stats);
+  card.appendChild(catSection);
+  content.appendChild(card);
 }
-
     function initializeCarousel(index, imageCount) {
   const container = document.getElementById(`carousel-${index}`);
   if (!container) return;
