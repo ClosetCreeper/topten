@@ -1,8 +1,9 @@
 // Trip page JavaScript
 class TripPage {
     constructor() {
-        this.supabaseUrl = process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL';
-        this.supabaseKey = process.env.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+        // Use hardcoded values for browser environment
+        this.supabaseUrl = 'https://idasmhlbftmhxibrjqjw.supabase.co';
+        this.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkYXNtaGxiZnRtaHhpYnJqcWp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzNDA2NzMsImV4cCI6MjA2NzkxNjY3M30.aWcHB8Aalo4_1APEjXs-3Ag6dOMbomr95T_Tj4BUUdc';
         this.supabase = null;
         this.tripId = this.getTripIdFromUrl();
         this.map = null;
