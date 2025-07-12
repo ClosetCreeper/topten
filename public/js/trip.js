@@ -1,7 +1,7 @@
-// Supabase configuration - replace with your actual values
+
+
 const SUPABASE_URL = 'https://idasmhlbftmhxibrjqjw.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkYXNtaGxiZnRtaHhpYnJqcWp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzNDA2NzMsImV4cCI6MjA2NzkxNjY3M30.aWcHB8Aalo4_1APEjXs-3Ag6dOMbomr95T_Tj4BUUdc'
-
 // Get trip ID from URL
 const tripId = window.location.pathname.split('/').pop()
 
@@ -124,48 +124,4 @@ function initializeMap() {
 
     // Draw route
     const routeCoords = tripData.routeData.map(point => [point.lat, point.lng])
-    L.polyline(routeCoords, { color: '#4CAF50', weight: 4 }).addTo(map)
-
-    // Add markers for start and end
-    if (routeCoords.length > 0) {
-        L.marker(routeCoords[0]).addTo(map).bindPopup('Start')
-        L.marker(routeCoords[routeCoords.length - 1]).addTo(map).bindPopup('End')
-    }
-
-    // Fit map to route
-    map.fitBounds(routeCoords)
-}
-
-// Show photo modal
-function showPhotoModal(photoUrl, locationName) {
-    const modal = document.createElement('div')
-    modal.className = 'photo-modal'
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <img src="${photoUrl}" alt="Photo" onerror="this.src='placeholder.jpg'">
-            ${locationName ? `<p class="location">�� ${locationName}</p>` : ''}
-        </div>
-    `
-    
-    document.body.appendChild(modal)
-    
-    modal.querySelector('.close').onclick = () => modal.remove()
-    modal.onclick = (e) => {
-        if (e.target === modal) modal.remove()
-    }
-}
-
-// Show error message
-function showError(message) {
-    const container = document.querySelector('.trip-container')
-    container.innerHTML = `
-        <div class="error-message">
-            <h2>Error</h2>
-            <p>${message}</p>
-        </div>
-    `
-}
-
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', initPage)
+    L.polyline(routeCoords, { color: '#4CAF50', weight: 4 }).ad
