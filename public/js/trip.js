@@ -112,7 +112,7 @@ function displayCategories() {
 // Initialize map
 function initializeMap() {
     if (!tripData?.routeData || tripData.routeData.length === 0) {
-        document.getElementById('map').style.display = 'none'
+        document.getElementById('mapSection').style.display = 'none'
         return
     }
 
