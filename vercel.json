@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/trip/:id",
+      "destination": "/trip.html"
+    }
+  ]
+}
