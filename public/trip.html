@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top 10 Adventure</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+    <div class="container">
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Loading adventure...</p>
+        </div>
+
+        <!-- Trip Content -->
+        <div id="trip-content" class="trip-content" style="display: none;">
+            <!-- Header Stats -->
+            <header class="trip-header">
+                <div class="trip-info">
+                    <h1 id="trip-title" class="trip-title">Adventure</h1>
+                    <p id="trip-date" class="trip-date">Date</p>
+                </div>
+                <div class="trip-stats">
+                    <div class="stat">
+                        <span id="miles-walked" class="stat-number">0</span>
+                        <span class="stat-label">Miles</span>
+                    </div>
+                    <div class="stat">
+                        <span id="photo-count" class="stat-number">0</span>
+                        <span class="stat-label">Photos</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Categories Grid -->
+            <section class="categories-section">
+                <h2>Categories Completed</h2>
+                <div id="categories-grid" class="categories-grid">
+                    <!-- Categories will be populated here -->
+                </div>
+            </section>
+
+            <!-- Map Section -->
+            <section id="map-section" class="map-section" style="display: none;">
+                <h2>Route Map</h2>
+                <div id="map" class="map-container"></div>
+            </section>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="error" style="display: none;">
+            <div class="error-content">
+                <h2>Adventure Not Found</h2>
+                <p>This adventure link may be invalid or has been removed.</p>
+                <a href="/" class="btn btn-primary">Go Home</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/trip.js"></script>
+</body>
+</html>
