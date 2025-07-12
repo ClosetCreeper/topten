@@ -96,7 +96,7 @@ class TripPage {
         this.displayCategories(categories);
         
         // Display map if route data exists
-        if (routeData && routeData.route_data) {
+        if (routeData && routeData.route_data && routeData.route_data.length > 0) {
             this.displayMap(routeData.route_data);
         }
     }
@@ -110,7 +110,9 @@ class TripPage {
             card.className = 'category-card';
             
             card.innerHTML = `
-                <img src="${category.photo_url}" alt="${category.category_name}" class="category-image" onerror="this.style.display='none'">
+                <div class="category-image-container">
+                    <img src="${category.photo_url}" alt="${category.category_name}" class="category-image" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'no-image\'>📸</div>'">
+                </div>
                 <div class="category-info">
                     <h3 class="category-name">${category.category_name}</h3>
                     <p class="category-location">
@@ -125,16 +127,24 @@ class TripPage {
     
     displayMap(routeData) {
         const mapSection = document.getElementById('map-section');
-        mapSection.style.display = 'block';
-        
-        // Initialize map after a short delay to ensure container is ready
-        setTimeout(() => {
-            this.initMap(routeData);
-        }, 100);
+        if (mapSection) {
+            mapSection.style.display = 'block';
+            
+            // Initialize map after a short delay to ensure container is ready
+            setTimeout(() => {
+                this.initMap(routeData);
+            }, 100);
+        }
     }
     
     initMap(routeData) {
         const mapContainer = document.getElementById('map');
+        const mapSection = document.getElementById('map-section');
+        
+        if (!mapContainer || !mapSection) {
+            console.error('Map container not found');
+            return;
+        }
         
         // Parse route data (assuming it's an array of coordinates)
         let coordinates = [];
@@ -149,36 +159,41 @@ class TripPage {
             return;
         }
         
-        // Calculate bounds
-        const bounds = L.latLngBounds(coordinates);
-        
-        // Create map
-        this.map = L.map('map').fitBounds(bounds);
-        
-        // Add tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(this.map);
-        
-        // Add route line
-        if (coordinates.length > 1) {
-            L.polyline(coordinates, {
-                color: '#667eea',
-                weight: 4,
-                opacity: 0.8
-            }).addTo(this.map);
-        }
-        
-        // Add markers for start and end points
-        if (coordinates.length > 0) {
-            L.marker(coordinates[0]).addTo(this.map)
-                .bindPopup('Start')
-                .openPopup();
+        try {
+            // Calculate bounds
+            const bounds = L.latLngBounds(coordinates);
             
+            // Create map
+            this.map = L.map('map').fitBounds(bounds);
+            
+            // Add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(this.map);
+            
+            // Add route line
             if (coordinates.length > 1) {
-                L.marker(coordinates[coordinates.length - 1]).addTo(this.map)
-                    .bindPopup('End');
+                L.polyline(coordinates, {
+                    color: '#667eea',
+                    weight: 4,
+                    opacity: 0.8
+                }).addTo(this.map);
             }
+            
+            // Add markers for start and end points
+            if (coordinates.length > 0) {
+                L.marker(coordinates[0]).addTo(this.map)
+                    .bindPopup('Start')
+                    .openPopup();
+                
+                if (coordinates.length > 1) {
+                    L.marker(coordinates[coordinates.length - 1]).addTo(this.map)
+                        .bindPopup('End');
+                }
+            }
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            mapSection.style.display = 'none';
         }
     }
     
