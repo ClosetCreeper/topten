@@ -457,7 +457,7 @@
       
     function getTripIdFromUrl() {
       const pathParts = window.location.pathname.split('/');
-      const tripsIndex = pathParts.indexOf('trips');
+      const tripsIndex = pathParts.indexOf('trip');
       if (tripsIndex !== -1 && tripsIndex < pathParts.length - 1) {
         return pathParts[tripsIndex + 1];
       }
