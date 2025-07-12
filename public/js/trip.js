@@ -110,20 +110,10 @@ class TripPage {
             
             let imageHtml = '<div class="no-image">📸</div>';
             if (category.photo_url) {
-                imageHtml = `<img src="${category.photo_url}" alt="${category.category_name}" class="category-image" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'no-image\'>📸</div>'">`;
+                imageHtml = '<img src="' + category.photo_url + '" alt="' + category.category_name + '" class="category-image" onerror="this.style.display=\'none\'; this.parentElement.innerHTML=\'<div class=\\\'no-image\\\'>📸</div>\'">';
             }
             
-            card.innerHTML = `
-                <div class="category-image-container">
-                    ${imageHtml}
-                </div>
-                <div class="category-info">
-                    <h3 class="category-name">${category.category_name}</h3>
-                    <p class="category-location">
-                        📍 ${category.location_name || 'Unknown location'}
-                    </p>
-                </div>
-            `;
+            card.innerHTML = '<div class="category-image-container">' + imageHtml + '</div><div class="category-info"><h3 class="category-name">' + category.category_name + '</h3><p class="category-location">📍 ' + (category.location_name || 'Unknown location') + '</p></div>';
             
             grid.appendChild(card);
         });
