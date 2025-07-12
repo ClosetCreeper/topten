@@ -1,3 +1,5 @@
+// Top 10 Adventures Platform – Next.js compatible (pages/index.js)
+
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
@@ -66,7 +68,7 @@ export default function Top10Adventures() {
       })
     });
 
-    router.push(`/trip/${tripId}`);
+    router.push(`/?tripId=${tripId}`);
   }
 
   return (
