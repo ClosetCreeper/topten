@@ -1,214 +1,171 @@
-// Trip page JavaScript
-class TripPage {
-    constructor() {
-        this.supabaseUrl = 'https://idasmhlbftmhxibrjqjw.supabase.co';
-        this.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkYXNtaGxiZnRtaHhpYnJqcWp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzNDA2NzMsImV4cCI6MjA2NzkxNjY3M30.aWcHB8Aalo4_1APEjXs-3Ag6dOMbomr95T_Tj4BUUdc';
-        this.supabase = null;
-        this.tripId = this.getTripIdFromUrl();
-        this.map = null;
-        
-        this.init();
-    }
-    
-    async init() {
-        try {
-            this.supabase = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
-            
-            if (!this.tripId) {
-                this.showError('Invalid trip URL');
-                return;
-            }
-            
-            await this.loadTripData();
-            
-        } catch (error) {
-            console.error('Error initializing trip page:', error);
-            this.showError('Failed to load trip data');
-        }
-    }
-    
-    getTripIdFromUrl() {
-        const path = window.location.pathname;
-        const match = path.match(/\/trip\/([a-zA-Z0-9]+)/);
-        return match ? match[1] : null;
-    }
-    
-    async loadTripData() {
-        try {
-            const { data: trip, error: tripError } = await this.supabase
-                .from('trips')
-                .select('*')
-                .eq('trip_id', this.tripId)
-                .single();
-            
-            if (tripError || !trip) {
-                this.showError('Trip not found');
-                return;
-            }
-            
-            const { data: categories, error: categoriesError } = await this.supabase
-                .from('trip_categories')
-                .select('*')
-                .eq('trip_id', this.tripId)
-                .order('created_at');
-            
-            if (categoriesError) {
-                console.error('Error loading categories:', categoriesError);
-            }
-            
-            const { data: routeData, error: routeError } = await this.supabase
-                .from('trip_routes')
-                .select('*')
-                .eq('trip_id', this.tripId)
-                .single();
-            
-            if (routeError) {
-                console.error('Error loading route data:', routeError);
-            }
-            
-            this.displayTrip(trip, categories || [], routeData);
-            
-        } catch (error) {
-            console.error('Error loading trip data:', error);
-            this.showError('Failed to load trip data');
-        }
-    }
-    
-    displayTrip(trip, categories, routeData) {
-        const loading = document.getElementById('loading');
-        const content = document.getElementById('trip-content');
-        
-        if (loading) loading.style.display = 'none';
-        if (content) content.style.display = 'block';
-        
-        const title = document.getElementById('trip-title');
-        const date = document.getElementById('trip-date');
-        const miles = document.getElementById('miles-walked');
-        const photos = document.getElementById('photo-count');
-        
-        if (title) title.textContent = trip.trip_name;
-        if (date) date.textContent = this.formatDate(trip.trip_date);
-        if (miles) miles.textContent = trip.miles_walked ? trip.miles_walked.toFixed(1) : '0';
-        if (photos) photos.textContent = trip.photo_count || categories.length;
-        
-        this.displayCategories(categories);
-        
-        if (routeData && routeData.route_data && routeData.route_data.length > 0) {
-            this.displayMap(routeData.route_data);
-        }
-    }
-    
-    displayCategories(categories) {
-        const grid = document.getElementById('categories-grid');
-        if (!grid) return;
-        
-        grid.innerHTML = '';
-        
-        categories.forEach(category => {
-            const card = document.createElement('div');
-            card.className = 'category-card';
-            
-            let imageHtml = '<div class="no-image">📸</div>';
-            if (category.photo_url) {
-                imageHtml = '<img src="' + category.photo_url + '" alt="' + category.category_name + '" class="category-image" onerror="this.style.display=\'none\'; this.parentElement.innerHTML=\'<div class=\\\'no-image\\\'>📸</div>\'">';
-            }
-            
-            card.innerHTML = '<div class="category-image-container">' + imageHtml + '</div><div class="category-info"><h3 class="category-name">' + category.category_name + '</h3><p class="category-location">📍 ' + (category.location_name || 'Unknown location') + '</p></div>';
-            
-            grid.appendChild(card);
-        });
-    }
-    
-    displayMap(routeData) {
-        const mapSection = document.getElementById('map-section');
-        if (!mapSection) return;
-        
-        mapSection.style.display = 'block';
-        
-        setTimeout(() => {
-            this.initMap(routeData);
-        }, 100);
-    }
-    
-    initMap(routeData) {
-        const mapContainer = document.getElementById('map');
-        const mapSection = document.getElementById('map-section');
-        
-        if (!mapContainer || !mapSection) {
-            console.error('Map container not found');
-            return;
-        }
-        
-        let coordinates = [];
-        if (Array.isArray(routeData)) {
-            coordinates = routeData;
-        } else if (routeData.coordinates) {
-            coordinates = routeData.coordinates;
-        }
-        
-        if (coordinates.length === 0) {
-            mapSection.style.display = 'none';
-            return;
-        }
-        
-        try {
-            const bounds = L.latLngBounds(coordinates);
-            this.map = L.map('map').fitBounds(bounds);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(this.map);
-            
-            if (coordinates.length > 1) {
-                L.polyline(coordinates, {
-                    color: '#667eea',
-                    weight: 4,
-                    opacity: 0.8
-                }).addTo(this.map);
-            }
-            
-            if (coordinates.length > 0) {
-                L.marker(coordinates[0]).addTo(this.map)
-                    .bindPopup('Start')
-                    .openPopup();
-                
-                if (coordinates.length > 1) {
-                    L.marker(coordinates[coordinates.length - 1]).addTo(this.map)
-                        .bindPopup('End');
-                }
-            }
-        } catch (error) {
-            console.error('Error initializing map:', error);
-            mapSection.style.display = 'none';
-        }
-    }
-    
-    formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    }
-    
-    showError(message) {
-        const loading = document.getElementById('loading');
-        const content = document.getElementById('trip-content');
-        const error = document.getElementById('error');
-        
-        if (loading) loading.style.display = 'none';
-        if (content) content.style.display = 'none';
-        if (error) error.style.display = 'flex';
-        
-        const errorContent = document.querySelector('.error-content h2');
-        if (errorContent) {
-            errorContent.textContent = message;
-        }
+// Supabase configuration - replace with your actual values
+const SUPABASE_URL = 'https://idasmhlbftmhxibrjqjw.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkYXNtaGxiZnRtaHhpYnJqcWp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzNDA2NzMsImV4cCI6MjA2NzkxNjY3M30.aWcHB8Aalo4_1APEjXs-3Ag6dOMbomr95T_Tj4BUUdc'
+
+// Get trip ID from URL
+const tripId = window.location.pathname.split('/').pop()
+
+let tripData = null
+let map = null
+
+// Initialize the page
+async function initPage() {
+    try {
+        await loadTripData()
+        displayTripInfo()
+        displayCategories()
+        initializeMap()
+    } catch (error) {
+        console.error('Error initializing page:', error)
+        showError('Failed to load trip data')
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    new TripPage();
-});
+// Load trip data from Supabase
+async function loadTripData() {
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js')
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    // Load trip info
+    const { data: tripInfo, error: tripError } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('trip_id', tripId)
+        .single()
+
+    if (tripError) throw tripError
+    tripData = tripInfo
+
+    // Load categories with multiple photos
+    const { data: categories, error: categoryError } = await supabase
+        .from('trip_categories')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('category_name')
+
+    if (categoryError) throw categoryError
+
+    // Group photos by category
+    tripData.categories = {}
+    categories.forEach(category => {
+        if (!tripData.categories[category.category_name]) {
+            tripData.categories[category.category_name] = []
+        }
+        tripData.categories[category.category_name].push(category)
+    })
+
+    // Load route data
+    const { data: routes, error: routeError } = await supabase
+        .from('trip_routes')
+        .select('route_data')
+        .eq('trip_id', tripId)
+        .single()
+
+    if (!routeError && routes) {
+        tripData.routeData = routes.route_data
+    }
+}
+
+// Display trip information
+function displayTripInfo() {
+    if (!tripData) return
+
+    document.getElementById('tripName').textContent = tripData.trip_name
+    document.getElementById('tripDate').textContent = new Date(tripData.trip_date).toLocaleDateString()
+    document.getElementById('milesWalked').textContent = tripData.miles_walked?.toFixed(1) || '0.0'
+    document.getElementById('photoCount').textContent = tripData.photo_count || '0'
+    
+    const categoryCount = Object.keys(tripData.categories || {}).length
+    document.getElementById('categoryCount').textContent = `${categoryCount}/10`
+}
+
+// Display categories with multiple photos
+function displayCategories() {
+    const grid = document.getElementById('categoriesGrid')
+    if (!tripData?.categories) return
+
+    grid.innerHTML = ''
+
+    Object.entries(tripData.categories).forEach(([categoryName, photos]) => {
+        const categoryCard = document.createElement('div')
+        categoryCard.className = 'category-card'
+        
+        categoryCard.innerHTML = `
+            <h3>${categoryName}</h3>
+            <div class="photos-grid">
+                ${photos.map(photo => `
+                    <div class="photo-item">
+                        <img src="${photo.photo_url || 'placeholder.jpg'}" 
+                             alt="${categoryName}" 
+                             onerror="this.src='placeholder.jpg'"
+                             onclick="showPhotoModal('${photo.photo_url}', '${photo.location_name || ''}')">
+                        ${photo.location_name ? `<p class="location">📍 ${photo.location_name}</p>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        `
+        
+        grid.appendChild(categoryCard)
+    })
+}
+
+// Initialize map
+function initializeMap() {
+    if (!tripData?.routeData || tripData.routeData.length === 0) {
+        document.getElementById('map').style.display = 'none'
+        return
+    }
+
+    map = L.map('map').setView([tripData.routeData[0].lat, tripData.routeData[0].lng], 13)
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map)
+
+    // Draw route
+    const routeCoords = tripData.routeData.map(point => [point.lat, point.lng])
+    L.polyline(routeCoords, { color: '#4CAF50', weight: 4 }).addTo(map)
+
+    // Add markers for start and end
+    if (routeCoords.length > 0) {
+        L.marker(routeCoords[0]).addTo(map).bindPopup('Start')
+        L.marker(routeCoords[routeCoords.length - 1]).addTo(map).bindPopup('End')
+    }
+
+    // Fit map to route
+    map.fitBounds(routeCoords)
+}
+
+// Show photo modal
+function showPhotoModal(photoUrl, locationName) {
+    const modal = document.createElement('div')
+    modal.className = 'photo-modal'
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <img src="${photoUrl}" alt="Photo" onerror="this.src='placeholder.jpg'">
+            ${locationName ? `<p class="location">�� ${locationName}</p>` : ''}
+        </div>
+    `
+    
+    document.body.appendChild(modal)
+    
+    modal.querySelector('.close').onclick = () => modal.remove()
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove()
+    }
+}
+
+// Show error message
+function showError(message) {
+    const container = document.querySelector('.container')
+    container.innerHTML = `
+        <div class="error-message">
+            <h2>Error</h2>
+            <p>${message}</p>
+        </div>
+    `
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', initPage)
