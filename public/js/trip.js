@@ -83,14 +83,22 @@ class TripPage {
     
     displayTrip(trip, categories, routeData) {
         // Hide loading, show content
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('trip-content').style.display = 'block';
+        const loading = document.getElementById('loading');
+        const content = document.getElementById('trip-content');
+        
+        if (loading) loading.style.display = 'none';
+        if (content) content.style.display = 'block';
         
         // Update header
-        document.getElementById('trip-title').textContent = trip.trip_name;
-        document.getElementById('trip-date').textContent = this.formatDate(trip.trip_date);
-        document.getElementById('miles-walked').textContent = trip.miles_walked ? trip.miles_walked.toFixed(1) : '0';
-        document.getElementById('photo-count').textContent = trip.photo_count || categories.length;
+        const title = document.getElementById('trip-title');
+        const date = document.getElementById('trip-date');
+        const miles = document.getElementById('miles-walked');
+        const photos = document.getElementById('photo-count');
+        
+        if (title) title.textContent = trip.trip_name;
+        if (date) date.textContent = this.formatDate(trip.trip_date);
+        if (miles) miles.textContent = trip.miles_walked ? trip.miles_walked.toFixed(1) : '0';
+        if (photos) photos.textContent = trip.photo_count || categories.length;
         
         // Display categories
         this.displayCategories(categories);
@@ -103,15 +111,21 @@ class TripPage {
     
     displayCategories(categories) {
         const grid = document.getElementById('categories-grid');
+        if (!grid) return;
+        
         grid.innerHTML = '';
         
         categories.forEach(category => {
             const card = document.createElement('div');
             card.className = 'category-card';
             
+            const imageHtml = category.photo_url ? 
+                `<img src="${category.photo_url}" alt="${category.category_name}" class="category-image" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'no-image\'>📸</div>'">` :
+                '<div class="no-image">📸</div>';
+            
             card.innerHTML = `
                 <div class="category-image-container">
-                    <img src="${category.photo_url}" alt="${category.category_name}" class="category-image" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'no-image\'>📸</div>'">
+                    ${imageHtml}
                 </div>
                 <div class="category-info">
                     <h3 class="category-name">${category.category_name}</h3>
@@ -127,14 +141,14 @@ class TripPage {
     
     displayMap(routeData) {
         const mapSection = document.getElementById('map-section');
-        if (mapSection) {
-            mapSection.style.display = 'block';
-            
-            // Initialize map after a short delay to ensure container is ready
-            setTimeout(() => {
-                this.initMap(routeData);
-            }, 100);
-        }
+        if (!mapSection) return;
+        
+        mapSection.style.display = 'block';
+        
+        // Initialize map after a short delay to ensure container is ready
+        setTimeout(() => {
+            this.initMap(routeData);
+        }, 100);
     }
     
     initMap(routeData) {
@@ -208,9 +222,13 @@ class TripPage {
     }
     
     showError(message) {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('trip-content').style.display = 'none';
-        document.getElementById('error').style.display = 'flex';
+        const loading = document.getElementById('loading');
+        const content = document.getElementById('trip-content');
+        const error = document.getElementById('error');
+        
+        if (loading) loading.style.display = 'none';
+        if (content) content.style.display = 'none';
+        if (error) error.style.display = 'flex';
         
         const errorContent = document.querySelector('.error-content h2');
         if (errorContent) {
