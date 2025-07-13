@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Hardcoded Supabase credentials (using service role for RLS bypass)
-// TODO: Replace with your actual service_role key from Supabase dashboard
 const supabaseUrl = 'https://idasmhlbftmhxibrjqjw.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkYXNtaGxiZnRtaHhpYnJqcWp3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjM0MDY3MywiZXhwIjoyMDY3OTE2NjcwfQ.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkYXNtaGxiZnRtaHhpYnJqcWp3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjM0MDY3MywiZXhwIjoyMDY3OTE2NjczfQ.UgfbOIBaVZPyXC5Hq6dAulotfWLlaF65OJ-s-UucBMM'
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
