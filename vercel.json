@@ -6,7 +6,7 @@
       "use": "@vercel/node"
     },
     {
-      "src": "public/**",
+      "src": "*.html",
       "use": "@vercel/static"
     }
   ],
@@ -18,20 +18,11 @@
   ],
   "headers": [
     {
-      "source": "/css/(.*)",
+      "source": "/(.*)",
       "headers": [
         {
-          "key": "Content-Type",
-          "value": "text/css"
-        }
-      ]
-    },
-    {
-      "source": "/js/(.*)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/javascript"
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
         }
       ]
     }
