@@ -1,0 +1,12 @@
+{
+  "name": "topten-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "node api/create-trip.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.42.0"
+  }
+}
