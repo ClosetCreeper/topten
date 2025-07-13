@@ -279,6 +279,27 @@
             gap: 5px;
         }
 
+        .captions-container {
+            margin-top: 15px;
+        }
+
+        .caption-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #667eea;
+            font-style: italic;
+            color: #495057;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .caption-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
         .map-container {
             background: #fff;
             border-radius: 20px;
@@ -438,259 +459,285 @@
             <p>Powered by TopTen • KeyNine Studios</p>
         </div>
     </div>
-  <script>
-    const SUPABASE_URL = 'https://idasmhlbftmhxibrjqjw.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkYXNtaGxiZnRtaHhpYnJqcWp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzNDA2NzMsImV4cCI6MjA2NzkxNjY3M30.aWcHB8Aalo4_1APEjXs-3Ag6dOMbomr95T_Tj4BUUdc';
-    const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <script>
+        const SUPABASE_URL = 'https://idasmhlbftmhxibrjqjw.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkYXNtaGxiZnRtaHhpYnJqcWp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzNDA2NzMsImV4cCI6MjA2NzkxNjY3M30.aWcHB8Aalo4_1APEjXs-3Ag6dOMbomr95T_Tj4BUUdc';
+        const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
 
-    function showError(message) {
-      const content = document.getElementById('content');
-      content.innerHTML = `
-        <div class="error">
-          <h3>Oops! Something went wrong</h3>
-          <p>${message}</p>
-        </div>
-      `;
-    }
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function displayTrip(trip) {
-  const content = document.getElementById('content');
-  content.innerHTML = '';
-
-  const card = document.createElement('div');
-  card.className = 'trip-card';
-
-  // Header section
-  const header = document.createElement('div');
-  header.className = 'trip-header';
-
-  const title = document.createElement('div');
-  title.className = 'trip-title';
-  title.textContent = trip.tripName;
-
-  const date = document.createElement('div');
-  date.className = 'trip-date';
-  date.textContent = new Date(trip.tripDate).toLocaleDateString();
-
-  header.appendChild(title);
-  header.appendChild(date);
-
-  // Stats section
-  const stats = document.createElement('div');
-  stats.className = 'trip-stats';
-
-  stats.innerHTML = `
-    <div class="stat-card">
-      <div class="stat-number">${trip.milesWalked.toFixed(1)} mi</div>
-      <div class="stat-label">Miles Walked</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">${trip.photoCount}</div>
-      <div class="stat-label">Photos</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">${trip.categories.length}</div>
-      <div class="stat-label">Categories</div>
-    </div>
-  `;
-
-  // Categories section
-  const catSection = document.createElement('div');
-  catSection.className = 'categories-section';
-
-  const sectionTitle = document.createElement('h2');
-  sectionTitle.className = 'section-title';
-  sectionTitle.textContent = 'Trip Highlights';
-
-  const grid = document.createElement('div');
-  grid.className = 'categories-grid';
-
-  trip.categories.forEach((cat, index) => {
-    const catCard = document.createElement('div');
-    catCard.className = 'category-card';
-
-    // Carousel
-    const carouselContainer = document.createElement('div');
-    carouselContainer.className = 'carousel-container';
-    carouselContainer.id = `carousel-${index}`;
-
-    const track = document.createElement('div');
-    track.className = 'carousel-track';
-
-    cat.photoURLs.forEach((url, i) => {
-      const img = document.createElement('img');
-      img.className = 'carousel-image';
-      img.src = url;
-      img.alt = `Photo ${i + 1}`;
-      track.appendChild(img);
-    });
-
-    carouselContainer.appendChild(track);
-
-    const imageCounter = document.createElement('div');
-    imageCounter.className = 'image-counter';
-    imageCounter.textContent = `${cat.photoURLs.length} photo${cat.photoURLs.length > 1 ? 's' : ''}`;
-    carouselContainer.appendChild(imageCounter);
-
-    // Content
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'category-content';
-
-    const name = document.createElement('div');
-    name.className = 'category-name';
-    name.textContent = cat.categoryName;
-
-    const loc = document.createElement('div');
-    loc.className = 'category-location';
-    loc.textContent = cat.location;
-
-    contentDiv.appendChild(name);
-    contentDiv.appendChild(loc);
-
-    catCard.appendChild(carouselContainer);
-    catCard.appendChild(contentDiv);
-    grid.appendChild(catCard);
-  });
-
-  catSection.appendChild(sectionTitle);
-  catSection.appendChild(grid);
-
-  // Assemble everything
-  card.appendChild(header);
-  card.appendChild(stats);
-  card.appendChild(catSection);
-  content.appendChild(card);
-}
-    function initializeCarousel(index, imageCount) {
-  const container = document.getElementById(`carousel-${index}`);
-  if (!container) return;
-
-  const track = container.querySelector('.carousel-track');
-  let currentIndex = 0;
-
-  // Create navigation buttons if multiple images
-  if (imageCount > 1) {
-    const prevButton = document.createElement('button');
-    const nextButton = document.createElement('button');
-
-    prevButton.innerHTML = '&#10094;';
-    nextButton.innerHTML = '&#10095;';
-
-    prevButton.className = 'carousel-nav prev';
-    nextButton.className = 'carousel-nav next';
-
-    prevButton.onclick = () => {
-      if (currentIndex > 0) {
-        currentIndex--;
-        updateSlide();
-      }
-    };
-
-    nextButton.onclick = () => {
-      if (currentIndex < imageCount - 1) {
-        currentIndex++;
-        updateSlide();
-      }
-    };
-
-    container.appendChild(prevButton);
-    container.appendChild(nextButton);
-  }
-
-  function updateSlide() {
-    track.style.transform = `translateX(-${currentIndex * 100}%)`;
-  }
-}
-
-
-      
-    function getTripIdFromUrl() {
-      const pathParts = window.location.pathname.split('/');
-      const tripsIndex = pathParts.indexOf('trip');
-      if (tripsIndex !== -1 && tripsIndex < pathParts.length - 1) {
-        return pathParts[tripsIndex + 1];
-      }
-      return null;
-    }
-
-    async function loadTrip() {
-      const tripId = getTripIdFromUrl();
-      if (!tripId) return showError('Invalid trip URL.');
-
-      if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-        return showError('Supabase not configured.');
-      }
-
-      try {
-        const { data: trip, error: tripError } = await supabase
-          .from('trips')
-          .select('*')
-          .eq('trip_id', tripId)
-          .single();
-
-        if (tripError || !trip) throw new Error('Trip not found.');
-
-        const { data: categories, error: catError } = await supabase
-          .from('trip_categories')
-          .select('*')
-          .eq('trip_id', tripId);
-
-        const { data: routeRows, error: routeError } = await supabase
-          .from('trip_routes')
-          .select('*')
-          .eq('trip_id', tripId)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        const routeData = routeRows?.[0]?.route_data || [];
-
-        const groupedCategories = {};
-        categories.forEach(cat => {
-          if (!groupedCategories[cat.category_name]) {
-            groupedCategories[cat.category_name] = {
-              categoryName: cat.category_name,
-              location: cat.location_name,
-              coordinates: {
-                latitude: parseFloat(cat.latitude),
-                longitude: parseFloat(cat.longitude)
-              },
-              photoURLs: []
-            };
-          }
-          groupedCategories[cat.category_name].photoURLs.push(cat.photo_url);
-        });
-
-        const transformedTrip = {
-          tripId: trip.trip_id,
-          tripName: trip.trip_name,
-          tripDate: trip.trip_date,
-          milesWalked: trip.miles_walked,
-          photoCount: trip.photo_count,
-          userId: trip.user_id,
-          routeData: routeData,
-          categories: Object.values(groupedCategories)
-        };
-
-        displayTrip(transformedTrip);
-
-        transformedTrip.categories.forEach((category, index) => {
-          initializeCarousel(index, category.photoURLs.length);
-        });
-
-        if (routeData.length > 0 && GOOGLE_MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY') {
-          await loadGoogleMaps();
-          initializeMap(routeData, transformedTrip.categories);
+        function showError(message) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="error">
+                    <h3>Oops! Something went wrong</h3>
+                    <p>${message}</p>
+                </div>
+            `;
         }
 
-      } catch (err) {
-        console.error(err);
-        showError('Failed to load trip: ' + err.message);
-      }
-    }
+        function displayTrip(trip) {
+            const content = document.getElementById('content');
+            content.innerHTML = '';
 
-    document.addEventListener('DOMContentLoaded', loadTrip);
-  </script>
+            const card = document.createElement('div');
+            card.className = 'trip-card';
+
+            // Header section
+            const header = document.createElement('div');
+            header.className = 'trip-header';
+
+            const title = document.createElement('div');
+            title.className = 'trip-title';
+            title.textContent = trip.tripName;
+
+            const date = document.createElement('div');
+            date.className = 'trip-date';
+            date.textContent = new Date(trip.tripDate).toLocaleDateString();
+
+            header.appendChild(title);
+            header.appendChild(date);
+
+            // Stats section
+            const stats = document.createElement('div');
+            stats.className = 'trip-stats';
+
+            stats.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${trip.milesWalked.toFixed(1)} mi</div>
+                    <div class="stat-label">Miles Walked</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${trip.photoCount}</div>
+                    <div class="stat-label">Photos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${trip.categories.length}</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+            `;
+
+            // Categories section
+            const catSection = document.createElement('div');
+            catSection.className = 'categories-section';
+
+            const sectionTitle = document.createElement('h2');
+            sectionTitle.className = 'section-title';
+            sectionTitle.textContent = 'Trip Highlights';
+
+            const grid = document.createElement('div');
+            grid.className = 'categories-grid';
+
+            trip.categories.forEach((cat, index) => {
+                const catCard = document.createElement('div');
+                catCard.className = 'category-card';
+
+                // Carousel
+                const carouselContainer = document.createElement('div');
+                carouselContainer.className = 'carousel-container';
+                carouselContainer.id = `carousel-${index}`;
+
+                const track = document.createElement('div');
+                track.className = 'carousel-track';
+
+                cat.photoURLs.forEach((url, i) => {
+                    const img = document.createElement('img');
+                    img.className = 'carousel-image';
+                    img.src = url;
+                    img.alt = `Photo ${i + 1}`;
+                    track.appendChild(img);
+                });
+
+                carouselContainer.appendChild(track);
+
+                const imageCounter = document.createElement('div');
+                imageCounter.className = 'image-counter';
+                imageCounter.textContent = `${cat.photoURLs.length} photo${cat.photoURLs.length > 1 ? 's' : ''}`;
+                carouselContainer.appendChild(imageCounter);
+
+                // Content
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'category-content';
+
+                const name = document.createElement('div');
+                name.className = 'category-name';
+                name.textContent = cat.categoryName;
+
+                const loc = document.createElement('div');
+                loc.className = 'category-location';
+                loc.textContent = cat.location;
+
+                contentDiv.appendChild(name);
+                contentDiv.appendChild(loc);
+
+                // Add caption display if available
+                if (cat.captions && cat.captions.length > 0) {
+                    const captionsContainer = document.createElement('div');
+                    captionsContainer.className = 'captions-container';
+                    
+                    cat.captions.forEach((caption, captionIndex) => {
+                        if (caption && caption.trim() !== '') {
+                            const captionDiv = document.createElement('div');
+                            captionDiv.className = 'caption-item';
+                            captionDiv.textContent = `"${caption}"`;
+                            captionsContainer.appendChild(captionDiv);
+                        }
+                    });
+                    
+                    if (captionsContainer.children.length > 0) {
+                        contentDiv.appendChild(captionsContainer);
+                    }
+                }
+
+                catCard.appendChild(carouselContainer);
+                catCard.appendChild(contentDiv);
+                grid.appendChild(catCard);
+            });
+
+            catSection.appendChild(sectionTitle);
+            catSection.appendChild(grid);
+
+            // Assemble everything
+            card.appendChild(header);
+            card.appendChild(stats);
+            card.appendChild(catSection);
+            content.appendChild(card);
+        }
+
+        function initializeCarousel(index, imageCount) {
+            const container = document.getElementById(`carousel-${index}`);
+            if (!container) return;
+
+            const track = container.querySelector('.carousel-track');
+            let currentIndex = 0;
+
+            // Create navigation buttons if multiple images
+            if (imageCount > 1) {
+                const prevButton = document.createElement('button');
+                const nextButton = document.createElement('button');
+
+                prevButton.innerHTML = '&#10094;';
+                nextButton.innerHTML = '&#10095;';
+
+                prevButton.className = 'carousel-nav prev';
+                nextButton.className = 'carousel-nav next';
+
+                prevButton.onclick = () => {
+                    if (currentIndex > 0) {
+                        currentIndex--;
+                        updateSlide();
+                    }
+                };
+
+                nextButton.onclick = () => {
+                    if (currentIndex < imageCount - 1) {
+                        currentIndex++;
+                        updateSlide();
+                    }
+                };
+
+                container.appendChild(prevButton);
+                container.appendChild(nextButton);
+            }
+
+            function updateSlide() {
+                track.style.transform = `translateX(-${currentIndex * 100}%)`;
+            }
+        }
+
+        function getTripIdFromUrl() {
+            const pathParts = window.location.pathname.split('/');
+            const tripsIndex = pathParts.indexOf('trip');
+            if (tripsIndex !== -1 && tripsIndex < pathParts.length - 1) {
+                return pathParts[tripsIndex + 1];
+            }
+            return null;
+        }
+
+        async function loadTrip() {
+            const tripId = getTripIdFromUrl();
+            if (!tripId) return showError('Invalid trip URL.');
+
+            if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+                return showError('Supabase not configured.');
+            }
+
+            try {
+                const { data: trip, error: tripError } = await supabase
+                    .from('trips')
+                    .select('*')
+                    .eq('trip_id', tripId)
+                    .single();
+
+                if (tripError || !trip) throw new Error('Trip not found.');
+
+                const { data: categories, error: catError } = await supabase
+                    .from('trip_categories')
+                    .select('*')
+                    .eq('trip_id', tripId);
+
+                const { data: routeRows, error: routeError } = await supabase
+                    .from('trip_routes')
+                    .select('*')
+                    .eq('trip_id', tripId)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                const routeData = routeRows?.[0]?.route_data || [];
+
+                const groupedCategories = {};
+                categories.forEach(cat => {
+                    if (!groupedCategories[cat.category_name]) {
+                        groupedCategories[cat.category_name] = {
+                            categoryName: cat.category_name,
+                            location: cat.location_name,
+                            coordinates: {
+                                latitude: parseFloat(cat.latitude),
+                                longitude: parseFloat(cat.longitude)
+                            },
+                            photoURLs: [],
+                            captions: []
+                        };
+                    }
+                    groupedCategories[cat.category_name].photoURLs.push(cat.photo_url);
+                    // Add caption if available
+                    if (cat.caption && cat.caption.trim() !== '') {
+                        groupedCategories[cat.category_name].captions.push(cat.caption);
+                    } else {
+                        groupedCategories[cat.category_name].captions.push(null);
+                    }
+                });
+
+                const transformedTrip = {
+                    tripId: trip.trip_id,
+                    tripName: trip.trip_name,
+                    tripDate: trip.trip_date,
+                    milesWalked: trip.miles_walked,
+                    photoCount: trip.photo_count,
+                    userId: trip.user_id,
+                    routeData: routeData,
+                    categories: Object.values(groupedCategories)
+                };
+
+                displayTrip(transformedTrip);
+
+                transformedTrip.categories.forEach((category, index) => {
+                    initializeCarousel(index, category.photoURLs.length);
+                });
+
+                if (routeData.length > 0 && GOOGLE_MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY') {
+                    await loadGoogleMaps();
+                    initializeMap(routeData, transformedTrip.categories);
+                }
+
+            } catch (err) {
+                console.error(err);
+                showError('Failed to load trip: ' + err.message);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadTrip);
+    </script>
 </body>
 </html>
