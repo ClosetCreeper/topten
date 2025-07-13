@@ -8,8 +8,8 @@ export default async function handler(req, res) {
   const { tripId, categories, location, route } = req.body;
 
   const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
   );
 
   const { error: tripError } = await supabase.from('trips').insert({
