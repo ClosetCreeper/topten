@@ -480,29 +480,35 @@
         function displayTrip(trip) {
             const content = document.getElementById('content');
             content.innerHTML = '';
-
+        
+            // Store carousel data globally for access in initializeCarousel
+            window.carouselData = trip.categories.map(cat => ({
+                locations: cat.locations || [],
+                captions: cat.captions || []
+            }));
+        
             const card = document.createElement('div');
             card.className = 'trip-card';
-
+        
             // Header section
             const header = document.createElement('div');
             header.className = 'trip-header';
-
+        
             const title = document.createElement('div');
             title.className = 'trip-title';
             title.textContent = trip.tripName;
-
+        
             const date = document.createElement('div');
             date.className = 'trip-date';
             date.textContent = new Date(trip.tripDate).toLocaleDateString();
-
+        
             header.appendChild(title);
             header.appendChild(date);
-
+        
             // Stats section
             const stats = document.createElement('div');
             stats.className = 'trip-stats';
-
+        
             stats.innerHTML = `
                 <div class="stat-card">
                     <div class="stat-number">${trip.milesWalked.toFixed(1)} mi</div>
@@ -517,30 +523,30 @@
                     <div class="stat-label">Categories</div>
                 </div>
             `;
-
+        
             // Categories section
             const catSection = document.createElement('div');
             catSection.className = 'categories-section';
-
+        
             const sectionTitle = document.createElement('h2');
             sectionTitle.className = 'section-title';
             sectionTitle.textContent = 'Trip Highlights';
-
+        
             const grid = document.createElement('div');
             grid.className = 'categories-grid';
-
+        
             trip.categories.forEach((cat, index) => {
                 const catCard = document.createElement('div');
                 catCard.className = 'category-card';
-
+        
                 // Carousel
                 const carouselContainer = document.createElement('div');
                 carouselContainer.className = 'carousel-container';
                 carouselContainer.id = `carousel-${index}`;
-
+        
                 const track = document.createElement('div');
                 track.className = 'carousel-track';
-
+        
                 cat.photoURLs.forEach((url, i) => {
                     const img = document.createElement('img');
                     img.className = 'carousel-image';
@@ -548,98 +554,117 @@
                     img.alt = `Photo ${i + 1}`;
                     track.appendChild(img);
                 });
-
+        
                 carouselContainer.appendChild(track);
-
+        
                 const imageCounter = document.createElement('div');
                 imageCounter.className = 'image-counter';
                 imageCounter.textContent = `${cat.photoURLs.length} photo${cat.photoURLs.length > 1 ? 's' : ''}`;
                 carouselContainer.appendChild(imageCounter);
-
+        
                 // Content
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'category-content';
-
+        
                 const name = document.createElement('div');
                 name.className = 'category-name';
                 name.textContent = cat.categoryName;
-
+        
                 const loc = document.createElement('div');
                 loc.className = 'category-location';
                 loc.textContent = cat.location;
-
+        
                 contentDiv.appendChild(name);
                 contentDiv.appendChild(loc);
-
-                // Add caption display if available
-                if (cat.captions && cat.captions.length > 0) {
-                    const captionsContainer = document.createElement('div');
-                    captionsContainer.className = 'captions-container';
-                    
-                    cat.captions.forEach((caption, captionIndex) => {
-                        if (caption && caption.trim() !== '') {
-                            const captionDiv = document.createElement('div');
-                            captionDiv.className = 'caption-item';
-                            captionDiv.textContent = `"${caption}"`;
-                            captionsContainer.appendChild(captionDiv);
-                        }
-                    });
-                    
-                    if (captionsContainer.children.length > 0) {
-                        contentDiv.appendChild(captionsContainer);
-                    }
-                }
-
+        
+                // Add captions container (will be populated by carousel)
+                const captionsContainer = document.createElement('div');
+                captionsContainer.className = 'captions-container';
+                contentDiv.appendChild(captionsContainer);
+        
                 catCard.appendChild(carouselContainer);
                 catCard.appendChild(contentDiv);
                 grid.appendChild(catCard);
             });
-
+        
             catSection.appendChild(sectionTitle);
             catSection.appendChild(grid);
-
+        
             // Assemble everything
             card.appendChild(header);
             card.appendChild(stats);
             card.appendChild(catSection);
             content.appendChild(card);
         }
-
         function initializeCarousel(index, imageCount) {
             const container = document.getElementById(`carousel-${index}`);
             if (!container) return;
-
+        
             const track = container.querySelector('.carousel-track');
+            const categoryCard = container.closest('.category-card');
+            const locationElement = categoryCard.querySelector('.category-location');
+            const captionsContainer = categoryCard.querySelector('.captions-container');
             let currentIndex = 0;
-
+        
+            // Get the category data for this carousel
+            const category = window.carouselData[index];
+            
+            function updateContent() {
+                // Update location
+                if (category.locations && category.locations[currentIndex]) {
+                    locationElement.textContent = category.locations[currentIndex];
+                }
+                
+                // Update captions
+                if (captionsContainer) {
+                    captionsContainer.innerHTML = '';
+                    if (category.captions && category.captions[currentIndex] && category.captions[currentIndex].trim() !== '') {
+                        const captionDiv = document.createElement('div');
+                        captionDiv.className = 'caption-item';
+                        captionDiv.textContent = `"${category.captions[currentIndex]}"`;
+                        captionsContainer.appendChild(captionDiv);
+                    }
+                }
+            }
+        
             // Create navigation buttons if multiple images
             if (imageCount > 1) {
                 const prevButton = document.createElement('button');
                 const nextButton = document.createElement('button');
-
+        
                 prevButton.innerHTML = '&#10094;';
                 nextButton.innerHTML = '&#10095;';
-
+        
                 prevButton.className = 'carousel-nav prev';
                 nextButton.className = 'carousel-nav next';
-
+        
                 prevButton.onclick = () => {
                     if (currentIndex > 0) {
                         currentIndex--;
                         updateSlide();
+                        updateContent();
                     }
                 };
-
+        
                 nextButton.onclick = () => {
                     if (currentIndex < imageCount - 1) {
                         currentIndex++;
                         updateSlide();
+                        updateContent();
                     }
                 };
-
+        
                 container.appendChild(prevButton);
                 container.appendChild(nextButton);
             }
+        
+            function updateSlide() {
+                track.style.transform = `translateX(-${currentIndex * 100}%)`;
+            }
+            
+            // Initialize content for first image
+            updateContent();
+        }
 
             function updateSlide() {
                 track.style.transform = `translateX(-${currentIndex * 100}%)`;
@@ -686,12 +711,14 @@
 
                 const routeData = routeRows?.[0]?.route_data || [];
 
+                // In the loadTrip function, update the groupedCategories section:
                 const groupedCategories = {};
                 categories.forEach(cat => {
                     if (!groupedCategories[cat.category_name]) {
                         groupedCategories[cat.category_name] = {
                             categoryName: cat.category_name,
                             location: cat.location_name,
+                            locations: [], // Array of locations for each photo
                             coordinates: {
                                 latitude: parseFloat(cat.latitude),
                                 longitude: parseFloat(cat.longitude)
@@ -701,6 +728,7 @@
                         };
                     }
                     groupedCategories[cat.category_name].photoURLs.push(cat.photo_url);
+                    groupedCategories[cat.category_name].locations.push(cat.location_name);
                     // Add caption if available
                     if (cat.caption && cat.caption.trim() !== '') {
                         groupedCategories[cat.category_name].captions.push(cat.caption);
