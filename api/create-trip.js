@@ -71,6 +71,7 @@ export default async function handler(req, res) {
         category_name: category.name || category.categoryName,
         photo_url: category.photo_url || category.photoURL,
         location_name: category.description || category.location,
+        caption: category.caption || null,
         latitude: location?.lat || 0,
         longitude: location?.lon || 0
       }))
