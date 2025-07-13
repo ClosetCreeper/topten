@@ -16,6 +16,12 @@
       "destination": "/trip.html"
     }
   ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
