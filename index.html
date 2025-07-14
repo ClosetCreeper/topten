@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TopTen – Coming Soon</title>
+  <title>Checkmark – Coming Soon</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet"/>
 
   <style>
@@ -18,6 +18,7 @@
       color: #fff;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 2rem;
@@ -120,6 +121,26 @@
       font-size: 1rem;
     }
 
+    .social-footer {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 2rem;
+      padding-bottom: 2rem;
+    }
+
+    .social-footer img {
+      width: 32px;
+      height: 32px;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .social-footer a:hover img {
+      transform: scale(1.15);
+      opacity: 0.85;
+    }
+
+
     @media (max-width: 900px) {
       .container {
         flex-direction: column;
@@ -144,22 +165,24 @@
   <div class="container">
     <!-- Left side: Image -->
     <div class="left">
-      <img src="screenshot.png" alt="Top Ten App Screenshot">
+      <img src="screenshot.png" alt="Checkmark App Screenshot">
     </div>
 
     <!-- Right side: Text + Form -->
     <div class="right">
-      <h1>Top 10</h1>
+      <h1>Checkmark</h1>
       <p class="description">
-        Top 10 is a gamified passport app that turns cities into curated adventures. 
+        Checkmark is a gamified passport app that turns cities into curated adventures. 
         Complete and curate pictures across 10 lifestyle categories — like Art, History, 
         Culture, Dining — to earn digital stamps, unlock hidden rewards, and share your journey.
-        <p class="description">Whether you're discovering your hometown or traveling somewhere new, Checkmark helps you go deeper, 
+      </p>
+      <p class="description">
+        Whether you're discovering your hometown or traveling somewhere new, Checkmark helps you go deeper, 
         not just farther.
       </p>
 
       <div class="badge">
-        🎖️ Be one of the first 25 explorers to download the app and get the change to win the exclusive  
+        🎖️ Be one of the first 25 explorers to download the app and get the exclusive  
         <strong>Uncharted Founders Badge.</strong>
       </div>
 
@@ -169,6 +192,19 @@
       </div>
     </div>
   </div>
+
+  <!-- Social Footer -->
+  <footer class="social-footer">
+    <a href="https://instagram.com/keyninestudios" target="_blank" aria-label="Instagram">
+      <img src="instagram.png" alt="Instagram" />
+    </a>
+    <a href="https://youtube.com/keyninestudios" target="_blank" aria-label="YouTube">
+      <img src="youtube.png" alt="Instagram" />
+    </a>
+    <a href="https://x.com/keyninestudios" target="_blank" aria-label="X">
+      <img src="x.png" alt="Instagram" />
+    </a>
+  </footer>
 
 </body>
 </html>
