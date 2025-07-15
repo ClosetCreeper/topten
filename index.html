@@ -92,7 +92,6 @@
       position: relative;
     }
 
-    /* Make sure ConvertKit form is visible and styled */
     .formkit-form {
       display: block !important;
       max-width: 100%;
@@ -126,7 +125,8 @@
       justify-content: center;
       gap: 1.5rem;
       margin-top: 2rem;
-      padding-bottom: 2rem;
+      padding-bottom: 1rem;
+      flex-wrap: wrap;
     }
 
     .social-footer img {
@@ -140,6 +140,16 @@
       opacity: 0.85;
     }
 
+    .legal-link {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+    }
+
+    .legal-link a {
+      color: #fff;
+      text-decoration: underline;
+    }
 
     @media (max-width: 900px) {
       .container {
@@ -191,6 +201,11 @@
         <script async data-uid="081b39ad4b" src="https://keyninestudios.kit.com/081b39ad4b/index.js"></script>
       </div>
     </div>
+  </div>
+
+  <!-- Terms and Conditions Link -->
+  <div class="legal-link">
+    <a href="https://topten.keyninestudios.com/raffle.html" target="_blank">Terms and Conditions</a>
   </div>
 
   <!-- Social Footer -->
