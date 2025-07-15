@@ -16,57 +16,40 @@
       background: linear-gradient(135deg, #6f00ff, #00c6ff);
       color: #fff;
       min-height: 100vh;
+      padding: 2rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 2rem;
     }
 
     .container {
-      display: flex;
-      flex-wrap: wrap;
       background: #fff;
       color: #222;
       border-radius: 20px;
-      overflow: hidden;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      max-width: 1100px;
+      max-width: 900px;
       width: 100%;
-    }
-
-    .left {
-      flex: 1 1 50%;
-      background: linear-gradient(to bottom right, #eae6ff, #f9f9ff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .left img {
-      width: 100%;
-      height: auto;
-      object-fit: contain;
-      display: block;
-      padding: 2rem;
-    }
-
-    .right {
-      flex: 1 1 50%;
       padding: 3rem;
-      background: #fefefe;
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .header-image {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
+      margin: 0 auto;
+      display: block;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     }
 
     h1 {
       font-size: 2.5rem;
+      margin-top: 2rem;
       margin-bottom: 1rem;
       font-weight: 900;
       color: #6f00ff;
+      text-align: center;
     }
 
     h2 {
@@ -89,16 +72,8 @@
       text-decoration: none;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 600px) {
       .container {
-        flex-direction: column;
-      }
-
-      .left, .right {
-        flex: 1 1 100%;
-      }
-
-      .right {
         padding: 2rem;
       }
 
@@ -109,41 +84,38 @@
   </style>
 </head>
 <body>
+  <img class="header-image" src="uncharted.gif" alt="Uncharted Explorers Pin" />
+
   <div class="container">
-    <div class="left">
-      <img src="uncharted.gif" alt="Uncharted Explorers Pin" />
-    </div>
-    <div class="right">
-      <h1>Uncharted Explorers Raffle</h1>
+    <h1>Uncharted Explorers Raffle</h1>
 
-      <p>The Uncharted Explorers Raffle ("Raffle") is sponsored and administered by KeyNine Studios. By entering this Raffle, you agree to be bound by these official Terms and Conditions. Failure to comply with these Terms may result in disqualification from the Raffle.</p>
+    <p>The Uncharted Explorers Raffle ("Raffle") is sponsored and administered by KeyNine Studios. By entering this Raffle, you agree to be bound by these official Terms and Conditions. Failure to comply with these Terms may result in disqualification from the Raffle.</p>
 
-      <h2>1. Eligibility</h2>
-      <p>Participation is open only to legal residents of the United States who are sixteen (16) years of age or older at the time of entry. Employees, affiliates, and immediate family members of KeyNine Studios are not eligible to enter.</p>
+    <h2>1. Eligibility</h2>
+    <p>Participation is open only to legal residents of the United States who are sixteen (16) years of age or older at the time of entry. Employees, affiliates, and immediate family members of KeyNine Studios are not eligible to enter.</p>
 
-      <h2>2. Entry</h2>
-      <p>NO PURCHASE NECESSARY. Entry is free of charge. Eligible participants are automatically entered into the Raffle upon signing up for KeyNine Studios email communications via any official signup form. Only one (1) entry per individual is permitted.</p>
+    <h2>2. Entry</h2>
+    <p>NO PURCHASE NECESSARY. Entry is free of charge. Eligible participants are automatically entered into the Raffle upon signing up for KeyNine Studios email communications via any official signup form. Only one (1) entry per individual is permitted.</p>
 
-      <h2>3. Prize</h2>
-      <p>Five (5) winners will each receive one (1) limited edition "Uncharted Explorers" enamel pin. Each pin is individually numbered and uniquely produced. No more than five (5) pins will be awarded. The prize is non-transferable and has no cash value.</p>
+    <h2>3. Prize</h2>
+    <p>Five (5) winners will each receive one (1) limited edition "Uncharted Explorers" enamel pin. Each pin is individually numbered and uniquely produced. No more than five (5) pins will be awarded. The prize is non-transferable and has no cash value.</p>
 
-      <h2>4. Raffle Period</h2>
-      <p>The Raffle will remain open until twenty-five (25) eligible email signups have been received. At that time, the Raffle will be closed and winners will be selected at random.</p>
+    <h2>4. Raffle Period</h2>
+    <p>The Raffle will remain open until twenty-five (25) eligible email signups have been received. At that time, the Raffle will be closed and winners will be selected at random.</p>
 
-      <h2>5. Winner Notification</h2>
-      <p>Winners will be contacted via the email address provided at the time of entry. If a winner does not respond within three (3) calendar days, an attempt will be made via text message (if such contact information is available). If no response is received, an alternate winner may be selected at random.</p>
+    <h2>5. Winner Notification</h2>
+    <p>Winners will be contacted via the email address provided at the time of entry. If a winner does not respond within three (3) calendar days, an attempt will be made via text message (if such contact information is available). If no response is received, an alternate winner may be selected at random.</p>
 
-      <h2>6. Legal Compliance</h2>
-      <p>This Raffle complies with applicable United States federal and state sweepstakes laws and regulations. It is conducted in accordance with the Children’s Online Privacy Protection Act (COPPA). No data is knowingly collected from individuals under the age of 13.</p>
+    <h2>6. Legal Compliance</h2>
+    <p>This Raffle complies with applicable United States federal and state sweepstakes laws and regulations. It is conducted in accordance with the Children’s Online Privacy Protection Act (COPPA). No data is knowingly collected from individuals under the age of 13.</p>
 
-      <h2>7. Limitation of Liability</h2>
-      <p>KeyNine Studios is not responsible for lost, late, misdirected, or incomplete entries due to technical or human error. By participating, entrants agree to release and hold harmless KeyNine Studios from any and all liability arising from participation in the Raffle or acceptance of the prize.</p>
+    <h2>7. Limitation of Liability</h2>
+    <p>KeyNine Studios is not responsible for lost, late, misdirected, or incomplete entries due to technical or human error. By participating, entrants agree to release and hold harmless KeyNine Studios from any and all liability arising from participation in the Raffle or acceptance of the prize.</p>
 
-      <h2>8. Sponsor Contact</h2>
-      <p>For questions, concerns, or to request removal from the drawing, please contact <a href="mailto:keyninestudios@gmail.com">keyninestudios@gmail.com</a>.</p>
+    <h2>8. Sponsor Contact</h2>
+    <p>For questions, concerns, or to request removal from the drawing, please contact <a href="mailto:keyninestudios@gmail.com">keyninestudios@gmail.com</a>.</p>
 
-      <p><em>Void where prohibited or restricted by law.</em></p>
-    </div>
+    <p><em>Void where prohibited or restricted by law.</em></p>
   </div>
 </body>
 </html>
