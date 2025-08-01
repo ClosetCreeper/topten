@@ -6,9 +6,7 @@
   <title>Top 10 – Download</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet"/>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
@@ -65,7 +63,7 @@
   <div class="container">
     <h1>Download Top 10</h1>
     <p>Thanks for joining the adventure. Tap below to download the app!</p>
-    <a class="download-btn" href="https://apps.apple.com/app/idYOUR_APP_ID_HERE">Download the App</a>
+    <a class="download-btn" id="downloadBtn" href="#">Download the App</a>
   </div>
 
   <script type="module">
@@ -77,23 +75,39 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const refCode = urlParams.get('ref');
+    const downloadLink = 'https://apps.apple.com/app/idYOUR_APP_ID_HERE';
 
+    // Save to cookie if referral exists
     if (refCode) {
-      // Optional: store in cookie for tracking later
-      document.cookie = `referral_code=${refCode}; path=/; max-age=2592000`; // 30 days
-
-      // Insert into 'referrals' table
-      supabase.from('referrals').insert([{
-        referral_code: refCode,
-        ip_address: '', // Optional: fill in with edge function later
-        user_agent: navigator.userAgent,
-        converted: false,
-      }]).then(res => {
-        console.log('Referral logged', res);
-      }).catch(err => {
-        console.error('Error logging referral', err);
-      });
+      document.cookie = `referral_code=${refCode}; path=/; max-age=2592000`;
     }
+
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    downloadBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+
+      // Get referral code from cookie (in case user refreshed)
+      const cookieRef = document.cookie.split('; ').find(row => row.startsWith('referral_code='));
+      const code = cookieRef ? cookieRef.split('=')[1] : null;
+
+      if (code) {
+        try {
+          await supabase.from('referrals').insert([{
+            referral_code: code,
+            ip_address: '', // optional, handled via backend if needed
+            user_agent: navigator.userAgent,
+            converted: true
+          }]);
+          console.log('Referral tracked on click:', code);
+        } catch (err) {
+          console.error('Error tracking referral:', err);
+        }
+      }
+
+      // Redirect after tracking
+      window.location.href = downloadLink;
+    });
   </script>
 </body>
 </html>
