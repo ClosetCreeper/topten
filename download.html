@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Top 10 – Download</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #6f00ff, #00c6ff);
+      color: #fff;
+      min-height: 100vh;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      background: #fff;
+      color: #222;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 700px;
+      width: 100%;
+      padding: 3rem;
+      margin-top: 2rem;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      font-weight: 900;
+      color: #6f00ff;
+    }
+    p {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #444;
+      margin-bottom: 1.5rem;
+    }
+    a.download-btn {
+      background-color: #6f00ff;
+      color: #fff;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+      border-radius: 12px;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 1rem;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+      transition: background 0.2s ease;
+    }
+    a.download-btn:hover {
+      background-color: #4c00b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Download Top 10</h1>
+    <p>Thanks for joining the adventure. Tap below to download the app!</p>
+    <a class="download-btn" href="https://apps.apple.com/app/idYOUR_APP_ID_HERE">Download the App</a>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabaseUrl = 'https://yzbesrwddijhmyoaywdc.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6YmVzcndkZGlqaG15b2F5d2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzM2MzUsImV4cCI6MjA2OTY0OTYzNX0.npV-FMZLNcvVcU_f-66CZPNFOFgvsyptvlUfShjEpDI';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+
+    if (refCode) {
+      // Optional: store in cookie for tracking later
+      document.cookie = `referral_code=${refCode}; path=/; max-age=2592000`; // 30 days
+
+      // Insert into 'referrals' table
+      supabase.from('referrals').insert([{
+        referral_code: refCode,
+        ip_address: '', // Optional: fill in with edge function later
+        user_agent: navigator.userAgent,
+        converted: false,
+      }]).then(res => {
+        console.log('Referral logged', res);
+      }).catch(err => {
+        console.error('Error logging referral', err);
+      });
+    }
+  </script>
+</body>
+</html>
