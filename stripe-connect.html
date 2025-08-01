@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Top 10 – Connect Stripe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #6f00ff, #00c6ff);
+      color: #fff;
+      min-height: 100vh;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: #fff;
+      color: #222;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+      padding: 3rem;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      font-weight: 900;
+      color: #6f00ff;
+    }
+    p {
+      font-size: 1rem;
+      color: #444;
+      margin-bottom: 2rem;
+    }
+    button {
+      background-color: #6f00ff;
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s ease;
+    }
+    button:hover {
+      background-color: #4c00b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Connect Your Stripe Account</h1>
+    <p>To receive affiliate payouts, you'll need to connect your Stripe account.</p>
+    <button id="connect-btn">Connect with Stripe</button>
+  </div>
+
+  <script>
+    document.getElementById('connect-btn').addEventListener('click', async () => {
+      const referralCode = prompt("Enter your referral code to link your account:");
+
+      if (!referralCode) {
+        alert("Referral code is required.");
+        return;
+      }
+
+      // Send to your backend to create a Stripe Connect link
+      const res = await fetch('https://your-api.com/create-stripe-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ referral_code: referralCode })
+      });
+
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+      else alert("Failed to get Stripe link.");
+    });
+  </script>
+</body>
+</html>
