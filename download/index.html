@@ -65,49 +65,48 @@
     <p>Thanks for joining the adventure. Tap below to download the app!</p>
     <a class="download-btn" id="downloadBtn" href="#">Download the App</a>
   </div>
-
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
     const supabaseUrl = 'https://yzbesrwddijhmyoaywdc.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6YmVzcndkZGlqaG15b2F5d2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzM2MzUsImV4cCI6MjA2OTY0OTYzNX0.npV-FMZLNcvVcU_f-66CZPNFOFgvsyptvlUfShjEpDI';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const refCode = urlParams.get('ref');
-    const downloadLink = 'https://apps.apple.com/us/app/top-10/id6746877152';
+  const urlParams = new URLSearchParams(window.location.search);
+  const refCode = urlParams.get('ref');
+  const downloadLink = 'https://apps.apple.com/us/app/top-10/id6746877152';
 
-    // Save to cookie if referral exists
+  async function trackAndRedirect() {
+    // Save referral code in cookie if present
     if (refCode) {
       document.cookie = `referral_code=${refCode}; path=/; max-age=2592000`;
     }
 
-    const downloadBtn = document.getElementById('downloadBtn');
+    // Get referral code from cookie
+    const cookieRef = document.cookie.split('; ').find(row => row.startsWith('referral_code='));
+    const code = cookieRef ? cookieRef.split('=')[1] : null;
 
-    downloadBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-
-      // Get referral code from cookie (in case user refreshed)
-      const cookieRef = document.cookie.split('; ').find(row => row.startsWith('referral_code='));
-      const code = cookieRef ? cookieRef.split('=')[1] : null;
-
-      if (code) {
-        try {
-          await supabase.from('referrals').insert([{
-            referral_code: code,
-            ip_address: '', // optional, handled via backend if needed
-            user_agent: navigator.userAgent,
-            converted: true
-          }]);
-          console.log('Referral tracked on click:', code);
-        } catch (err) {
-          console.error('Error tracking referral:', err);
-        }
+    if (code) {
+      try {
+        await supabase.from('referrals').insert([{
+          referral_code: code,
+          ip_address: '', // optional
+          user_agent: navigator.userAgent,
+          converted: true
+        }]);
+        console.log('Referral tracked:', code);
+      } catch (err) {
+        console.error('Error tracking referral:', err);
       }
+    }
 
-      // Redirect after tracking
-      window.location.href = downloadLink;
-    });
-  </script>
+    // Redirect immediately after tracking
+    window.location.href = downloadLink;
+  }
+
+  // Run on page load
+  trackAndRedirect();
+</script>
 </body>
 </html>
