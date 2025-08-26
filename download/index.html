@@ -69,9 +69,9 @@
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-    const supabaseUrl = 'https://yzbesrwddijhmyoaywdc.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6YmVzcndkZGlqaG15b2F5d2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzM2MzUsImV4cCI6MjA2OTY0OTYzNX0.npV-FMZLNcvVcU_f-66CZPNFOFgvsyptvlUfShjEpDI';
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabaseUrl = 'https://yzbesrwddijhmyoaywdc.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6YmVzcndkZGlqaG15b2F5d2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzM2MzUsImV4cCI6MjA2OTY0OTYzNX0.npV-FMZLNcvVcU_f-66CZPNFOFgvsyptvlUfShjEpDI';
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   const urlParams = new URLSearchParams(window.location.search);
   const refCode = urlParams.get('ref');
