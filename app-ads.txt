@@ -1,0 +1,4 @@
+
+# app-ads.txt for Top 10! - KeyNine Studios
+
+google.com, pub-3641924636314859, DIRECT, f08c47fec0942fa0
