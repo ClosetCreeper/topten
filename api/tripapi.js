@@ -31,8 +31,12 @@ async function fetchRecord(recordName, jwtToken) {
     `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/lookup`,
     {
       method: 'POST',
-      headers: { Authorization: `Bearer ${jwtToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ records: [{ recordName }] }), // <-- wrap in object
+      headers: { 
+        Authorization: `Bearer ${jwtToken}`, 
+        'Content-Type': 'application/json',
+        'X-Apple-CloudKit-Request-KeyID': KEY_ID,
+      },
+      body: JSON.stringify({ records: [recordName] }),
     }
   );
   if (!res.ok) {
@@ -49,7 +53,11 @@ async function fetchPhotos(userRef, placeRef, jwtToken) {
     `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/query`,
     {
       method: 'POST',
-      headers: { Authorization: `Bearer ${jwtToken}`, 'Content-Type': 'application/json' },
+      headers: { 
+        Authorization: `Bearer ${jwtToken}`, 
+        'Content-Type': 'application/json',
+        'X-Apple-CloudKit-Request-KeyID': KEY_ID,
+      },
       body: JSON.stringify({
         recordType: 'Top10PhotoEntries',
         filterBy: [
@@ -75,6 +83,7 @@ export default async function handler(req, res) {
   try {
     console.log('Fetching trip:', trip);
     console.log("PRIVATE_KEY:", PRIVATE_KEY.slice(0,10), "...", PRIVATE_KEY.slice(-10));
+
     const jwtToken = generateJWT();
 
     const progressRecord = await fetchRecord(trip, jwtToken);
