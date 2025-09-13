@@ -1,108 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudKit Trip Viewer</title>
-    <script src="https://cdn.apple-cloudkit.com/ck/2/cloudkit.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { color: #333; }
-        .trip { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        .trip h2 { margin: 0; font-size: 1.2em; }
-        .trip p { margin: 5px 0; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Top 10 Trip Viewer</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); min-height:100vh;color:#333;margin:0;padding:20px;}
+  .container {max-width:600px;margin:0 auto;}
+  h1 {text-align:center;color:white;}
+  .trip-card {background:rgba(255,255,255,0.95);border-radius:15px;padding:15px;margin-bottom:15px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
+  .trip-card h2 {margin:0;font-size:1.2rem;}
+  .trip-card p {margin:5px 0;}
+</style>
 </head>
 <body>
-    <h1>Trip Details</h1>
-    <div id="trip-container"></div>
+<div class="container">
+  <h1>Trip Details</h1>
+  <div id="trip-container">Loading...</div>
+</div>
 
-    <script>
-        // Initialize CloudKit
-        CloudKit.configure({
-            containers: [{
-                containerIdentifier: 'iCloud.keyninestudios.topten',
-                apiTokenAuth: {
-                    apiToken: '1bab850cbdcaffa45d64df96aa7ac56781f0028a3f34dddb58276819a7859e59',
-                    persist: true
-                },
-                environment: 'development'
-            }]
-        });
+<script src="https://cdn.apple-cloudkit.com/ck/2/cloudkit.js"></script>
+<script>
+  CloudKit.configure({
+    containers: [{
+      containerIdentifier: 'iCloud.keyninestudios.topten',
+      apiTokenAuth: { apiToken: '1bab850cbdcaffa45d64df96aa7ac56781f0028a3f34dddb58276819a7859e59' },
+      environment: 'development'
+    }]
+  });
 
-        // Function to load trip data
-        async function loadTrip(tripId) {
-            try {
-                const container = CloudKit.getDefaultContainer();
-                const db = container.publicCloudDatabase;
+  const db = CloudKit.getDefaultContainer().publicCloudDatabase;
 
-                // Fetch the trip record
-                const tripResponse = await db.fetchRecords([tripId]);
-                if (tripResponse.hasErrors) {
-                    throw new Error('Failed to fetch trip data: ' + tripResponse.errors[0].message);
-                }
+  async function loadTrip(tripId) {
+    try {
+      const tripResponse = await db.fetchRecords([tripId]);
+      if(tripResponse.hasErrors) throw new Error(tripResponse.errors[0].message);
+      const trip = tripResponse.records[0];
 
-                const trip = tripResponse.records[0];
-                const userRef = trip.fields.user?.value;
-                const placeRef = trip.fields.place?.value;
+      if(!trip.fields.user?.value?.recordName) throw new Error("User reference missing recordName");
+      if(!trip.fields.place?.value?.recordName) throw new Error("Place reference missing recordName");
 
-                // Validate reference fields
-                if (!userRef || !userRef.recordName) {
-                    throw new Error("User reference missing recordName");
-                }
-                if (!placeRef || !placeRef.recordName) {
-                    throw new Error("Place reference missing recordName");
-                }
+      const [userResp, placeResp] = await Promise.all([
+        db.fetchRecords([trip.fields.user.value.recordName]),
+        db.fetchRecords([trip.fields.place.value.recordName])
+      ]);
 
-                // Fetch user and place records
-                const [userResponse, placeResponse] = await Promise.all([
-                    db.fetchRecords([userRef.recordName]),
-                    db.fetchRecords([placeRef.recordName])
-                ]);
+      const user = userResp.records[0];
+      const place = placeResp.records[0];
 
-                if (userResponse.hasErrors || placeResponse.hasErrors) {
-                    throw new Error('Failed to fetch user/place data');
-                }
+      const photosQuery = await db.performQuery({
+        recordType: 'Top10PhotoEntries',
+        filterBy: [
+          { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: { recordName: user.recordName, type:"REFERENCE"} } },
+          { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: { recordName: place.recordName, type:"REFERENCE"} } }
+        ]
+      });
 
-                const user = userResponse.records[0];
-                const place = placeResponse.records[0];
+      const photos = photosQuery.records;
 
-                // Query for Top10PhotoEntries
-                const photosQuery = await db.performQuery({
-                    recordType: 'Top10PhotoEntries',
-                    filterBy: [
-                        { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: user.recordName } },
-                        { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: place.recordName } }
-                    ]
-                });
+      const container = document.getElementById('trip-container');
+      container.innerHTML = `
+        <div class="trip-card">
+          <h2>${trip.fields.title || "Trip"}</h2>
+          <p><strong>User:</strong> ${user.fields.name}</p>
+          <p><strong>Place:</strong> ${place.fields.name}</p>
+          <p><strong>Photos:</strong></p>
+          <ul>${photos.map(p=>`<li>${p.fields.title}</li>`).join('')}</ul>
+        </div>
+      `;
+    } catch(e) {
+      console.error(e);
+      document.getElementById('trip-container').innerHTML = `<p>Error: ${e.message}</p>`;
+    }
+  }
 
-                if (photosQuery.hasErrors) {
-                    throw new Error('Failed to fetch photos: ' + photosQuery.errors[0].message);
-                }
-
-                const photos = photosQuery.records;
-
-                // Display the trip details
-                const tripContainer = document.getElementById('trip-container');
-                tripContainer.innerHTML = `
-                    <div class="trip">
-                        <h2>${trip.fields.title}</h2>
-                        <p><strong>User:</strong> ${user.fields.name}</p>
-                        <p><strong>Place:</strong> ${place.fields.name}</p>
-                        <p><strong>Photos:</strong></p>
-                        <ul>
-                            ${photos.map(photo => `<li>${photo.fields.title}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Error loading trip:', error);
-                document.getElementById('trip-container').innerHTML = `<p>Error: ${error.message}</p>`;
-            }
-        }
-
-        // Example: Load trip with ID 'EA35C155-F2C3-4478-9B81-279DA9CAAF6A'
-        loadTrip('EA35C155-F2C3-4478-9B81-279DA9CAAF6A');
-    </script>
+  // Replace with your actual trip record ID
+  loadTrip('EA35C155-F2C3-4478-9B81-279DA9CAAF6A');
+</script>
 </body>
 </html>
