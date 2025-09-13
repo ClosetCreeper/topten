@@ -7,37 +7,41 @@
   <style>
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #f8f9fa;
       color: #222;
     }
 
-    .trip-card {
-      max-width: 800px;
+    #tripContainer {
+      max-width: 900px;
       margin: 2rem auto;
+      padding: 1rem;
+    }
+
+    .trip-card {
       background: #fff;
       border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
       padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
 
     .trip-card h1 {
-      margin: 0 0 0.25rem;
       font-size: 2rem;
-      color: #008f5d;
+      margin-bottom: 0.25rem;
+      color: #2c3e50;
     }
 
     .trip-card .user {
       margin: 0 0 1.5rem;
       font-size: 1rem;
-      color: #666;
+      color: #555;
     }
 
     .stats {
       display: flex;
       gap: 1rem;
       flex-wrap: wrap;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
 
     .stat {
@@ -52,21 +56,20 @@
     }
 
     .category h3 {
+      font-size: 1.25rem;
       margin-bottom: 0.75rem;
-      font-size: 1.2rem;
-      color: #444;
+      color: #333;
     }
 
     .carousel {
       position: relative;
       overflow: hidden;
       border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     }
 
     .slide {
       display: none;
-      text-align: center;
     }
 
     .slide.active {
@@ -74,7 +77,7 @@
     }
 
     .slide img {
-      max-width: 100%;
+      width: 100%;
       border-radius: 12px 12px 0 0;
       display: block;
     }
@@ -86,7 +89,7 @@
       border-top: 1px solid #eee;
       font-style: italic;
       font-size: 0.9rem;
-      color: #333;
+      color: #444;
     }
 
     .carousel button {
@@ -120,61 +123,59 @@
   <main id="tripContainer"></main>
 
   <script type="module">
-    // Replace this stub with your actual CloudKit setup
-    const cloudKit = {
-      async fetchRecords({ recordType }) {
-        console.log("Fetching", recordType);
-        // fake test data so you can see styling
-        if (recordType === "Progress") {
-          return { records: [{ fields: { placeId: { value: "place1" }, userId: { value: "user1" }, daysExplored: { value: 3 }, milesWalked: { value: 0 } } }] };
-        }
-        if (recordType === "Place") {
-          return { records: [{ fields: { name: { value: "London" } } }] };
-        }
-        if (recordType === "User") {
-          return { records: [{ fields: { username: { value: "Kehoe" } } }] };
-        }
-        if (recordType === "PhotoEntry") {
-          return {
-            records: [
-              { fields: { category: { value: "Landmarks" }, photoData: { value: { downloadURL: "https://picsum.photos/600/400?1" } }, caption: { value: "Big Ben!" } } },
-              { fields: { category: { value: "Landmarks" }, photoData: { value: { downloadURL: "https://picsum.photos/600/400?2" } }, caption: { value: "Tower Bridge" } } },
-              { fields: { category: { value: "Food" }, photoData: { value: { downloadURL: "https://picsum.photos/600/400?3" } }, caption: { value: "Fish and Chips" } } },
-            ],
-          };
-        }
-        return { records: [] };
-      }
-    };
+    import { cloudKit } from "./cloudkit.js"; // use your real CK init
 
     async function loadTrip() {
       try {
-        const tripId = "fakeTrip"; // TODO: pull from URL if needed
+        const urlParams = new URLSearchParams(window.location.search);
+        const tripId = urlParams.get("tripId");
+        if (!tripId) throw new Error("Missing tripId in URL.");
 
-        // fetch data
-        const progressRes = await cloudKit.fetchRecords({ recordType: "Progress" });
+        // Progress
+        const progressRes = await cloudKit.fetchRecords({
+          recordType: "Progress",
+          filterBy: [{ fieldName: "tripId", comparator: "EQUALS", value: tripId }],
+        });
+        if (!progressRes.records.length) throw new Error("Trip not found.");
         const progress = progressRes.records[0].fields;
-        const placeRes = await cloudKit.fetchRecords({ recordType: "Place" });
-        const place = placeRes.records[0].fields;
-        const userRes = await cloudKit.fetchRecords({ recordType: "User" });
-        const user = userRes.records[0].fields;
-        const entriesRes = await cloudKit.fetchRecords({ recordType: "PhotoEntry" });
+
+        // Place
+        const placeRes = await cloudKit.fetchRecords({
+          recordType: "Place",
+          filterBy: [{ fieldName: "recordName", comparator: "EQUALS", value: progress.placeId.value }],
+        });
+        const place = placeRes.records[0]?.fields;
+
+        // User
+        const userRes = await cloudKit.fetchRecords({
+          recordType: "User",
+          filterBy: [{ fieldName: "recordName", comparator: "EQUALS", value: progress.userId.value }],
+        });
+        const user = userRes.records[0]?.fields;
+
+        // Photos
+        const entriesRes = await cloudKit.fetchRecords({
+          recordType: "PhotoEntry",
+          filterBy: [{ fieldName: "tripId", comparator: "EQUALS", value: tripId }],
+        });
 
         const categoriesMap = {};
         for (const entry of entriesRes.records) {
           const cat = entry.fields.category.value;
           if (!categoriesMap[cat]) categoriesMap[cat] = { photos: [], captions: [] };
-          categoriesMap[cat].photos.push(entry.fields.photoData.value.downloadURL);
-          categoriesMap[cat].captions.push(entry.fields.caption.value || "");
+          if (entry.fields.photoData?.value?.downloadURL) {
+            categoriesMap[cat].photos.push(entry.fields.photoData.value.downloadURL);
+            categoriesMap[cat].captions.push(entry.fields.caption?.value || "");
+          }
         }
 
         const tripData = {
-          name: place.name.value,
-          user: user.username.value,
+          name: place?.name?.value || "Unknown Place",
+          user: user?.username?.value || "Anonymous",
           stats: {
             photosTaken: entriesRes.records.length,
-            daysExplored: progress.daysExplored.value,
-            milesWalked: progress.milesWalked.value,
+            daysExplored: progress.daysExplored?.value || 0,
+            milesWalked: progress.milesWalked?.value || 0,
           },
           categories: categoriesMap,
         };
@@ -204,15 +205,11 @@
           <div class="category">
             <h3>${cat}</h3>
             <div class="carousel" data-category="${cat}">
-              ${data.photos
-                .map(
-                  (url, i) =>
-                    `<div class="slide ${i === 0 ? "active" : ""}">
-                      <img src="${url}" alt="${cat} photo"/>
-                      <p class="caption">${data.captions[i]}</p>
-                    </div>`
-                )
-                .join("")}
+              ${data.photos.map((url, i) => `
+                <div class="slide ${i === 0 ? "active" : ""}">
+                  <img src="${url}" alt="${cat} photo"/>
+                  <p class="caption">${data.captions[i]}</p>
+                </div>`).join("")}
               <button class="prev">←</button>
               <button class="next">→</button>
             </div>
@@ -236,16 +233,13 @@
       document.querySelectorAll(".carousel").forEach((carousel) => {
         const slides = carousel.querySelectorAll(".slide");
         let index = 0;
-
         const update = () => {
           slides.forEach((s, i) => s.classList.toggle("active", i === index));
         };
-
         carousel.querySelector(".prev").addEventListener("click", () => {
           index = (index - 1 + slides.length) % slides.length;
           update();
         });
-
         carousel.querySelector(".next").addEventListener("click", () => {
           index = (index + 1) % slides.length;
           update();
