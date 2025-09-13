@@ -6,7 +6,9 @@ const CONTAINER = 'iCloud.keyninestudios.topten';
 const DATABASE = 'public';
 const ENVIRONMENT = 'development'; // change to 'production' when ready
 const KEY_ID = 'd1bb78c89aa70961797b9e17e9c25dd876cf0a84f19d20a8b5d7a7bcb26954fa';
-const PRIVATE_KEY = process.env.CK_PRIVATE_KEY; // PEM key stored in Vercel env
+// Read private key from env and ensure real line breaks
+const PRIVATE_KEY = process.env.CK_PRIVATE_KEY.replace(/\\n/g, '\n');
+
 
 function generateJWT() {
   const now = Math.floor(Date.now() / 1000);
