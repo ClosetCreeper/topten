@@ -468,30 +468,32 @@
     </div>
 
     <script>
-        // CloudKit Configuration
+        // CloudKit Configuration - UPDATE THESE VALUES
         const CLOUDKIT_CONFIG = {
             containerIdentifier: 'iCloud.keyninestudios.topten',
             apiKey: '87fad2c397513d683659124ee5317d117d6af88b1b1c35fa6d98c27e46568eed',
-            environment: 'development'
+            environment: 'development' // Try development first, then production
         };
 
         let cloudKit;
 
         async function initializeCloudKit() {
             try {
+                console.log('Initializing CloudKit with:', CLOUDKIT_CONFIG);
+                
                 cloudKit = window.CloudKit.configure({
                     containers: [{
                         containerIdentifier: CLOUDKIT_CONFIG.containerIdentifier,
-                        apiTokenAuth: {
-                            apiToken: CLOUDKIT_CONFIG.apiKey,
-                            persist: false
-                        },
+                        apiToken: CLOUDKIT_CONFIG.apiKey, // Use apiToken instead of apiTokenAuth
                         environment: CLOUDKIT_CONFIG.environment
                     }]
                 });
 
+                console.log('CloudKit configured successfully');
                 const container = cloudKit.getDefaultContainer();
                 const database = container.publicCloudDatabase;
+                console.log('Database obtained:', database);
+                
                 return database;
             } catch (error) {
                 console.error('Failed to initialize CloudKit:', error);
