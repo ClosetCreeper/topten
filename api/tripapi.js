@@ -32,7 +32,7 @@ async function fetchRecord(recordName, jwtToken) {
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${jwtToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ records: [recordName] }),
+      body: JSON.stringify({ records: [{ recordName }] }), // <-- wrap in object
     }
   );
   if (!res.ok) {
