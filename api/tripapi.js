@@ -74,7 +74,7 @@ export default async function handler(req, res) {
 
   try {
     console.log('Fetching trip:', trip);
-
+    console.log("PRIVATE_KEY:", PRIVATE_KEY.slice(0,10), "...", PRIVATE_KEY.slice(-10));
     const jwtToken = generateJWT();
 
     const progressRecord = await fetchRecord(trip, jwtToken);
