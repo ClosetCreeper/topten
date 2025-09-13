@@ -666,11 +666,20 @@
         }
 
         function getTripIdFromUrl() {
+            // First check for query parameter (?trip=id)
+            const urlParams = new URLSearchParams(window.location.search);
+            const tripFromQuery = urlParams.get('trip');
+            if (tripFromQuery) {
+                return tripFromQuery;
+            }
+            
+            // Then check for path format (/trip/id)
             const pathParts = window.location.pathname.split('/');
             const tripsIndex = pathParts.indexOf('trip');
             if (tripsIndex !== -1 && tripsIndex < pathParts.length - 1) {
                 return pathParts[tripsIndex + 1];
             }
+            
             return null;
         }
 
