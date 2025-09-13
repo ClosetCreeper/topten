@@ -3,104 +3,54 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Top 10 Trip API</title>
+<title>Top 10 Trip Viewer</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+  .trip-card { background: white; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 20px; max-width: 600px; margin: 0 auto; }
+  h1 { margin-top: 0; }
+  .category { margin-top: 15px; }
+  .photos img { max-width: 100px; margin-right: 10px; margin-bottom: 10px; border-radius: 8px; }
+</style>
 </head>
 <body>
-<script src="https://cdn.apple-cloudkit.com/ck/2/cloudkit.js"></script>
+
+<div class="trip-card" id="tripCard">
+  <h1>Loading trip...</h1>
+</div>
+
 <script>
-  // --- CONFIG ---
-  CloudKit.configure({
-    containers: [{
-      containerIdentifier: 'iCloud.keyninestudios.topten',
-      apiTokenAuth: { apiToken: '1bab850cbdcaffa45d64df96aa7ac56781f0028a3f34dddb58276819a7859e59' },
-      environment: 'development'
-    }]
-  });
+async function loadTrip() {
+  const tripId = new URLSearchParams(window.location.search).get('trip');
+  if (!tripId) return document.getElementById('tripCard').innerHTML = '<p>No trip specified.</p>';
 
-  const db = CloudKit.getDefaultContainer().publicCloudDatabase;
+  try {
+    const res = await fetch(`https://topten.keyninestudios.com/api/tripapi?trip=${tripId}`);
+    const data = await res.json();
 
-  async function fetchTripData(tripId) {
-    if (!tripId) {
-      console.error('Trip ID not provided in URL');
-      return;
-    }
-
-    try {
-      // 1️⃣ Fetch the Top10UserProgress record
-      const progressRes = await db.fetchRecords({ recordNames: [tripId] });
-      const progress = progressRes.records[0];
-      if (!progress) throw new Error('Trip not found');
-
-      // Safely get user and place record names
-      const userRef = progress.fields.user?.value?.recordName;
-      const placeRef = progress.fields.place?.value?.recordName;
-
-      if (!userRef || !placeRef) throw new Error('User or Place reference missing');
-
-      // 2️⃣ Fetch Top10Places record
-      const placeRes = await db.fetchRecords({ recordNames: [placeRef] });
-      const place = placeRes.records[0];
-      if (!place) throw new Error('Place not found');
-
-      // 3️⃣ Fetch AppUsers record
-      const userRes = await db.fetchRecords({ recordNames: [userRef] });
-      const user = userRes.records[0];
-      if (!user) throw new Error('User not found');
-
-      // 4️⃣ Query Top10PhotoEntries for this user and place
-      const photoQuery = await db.performQuery({
-        recordType: 'Top10PhotoEntries',
-        filterBy: [
-          { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: { recordName: userRef, type: 'REFERENCE' } } },
-          { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: { recordName: placeRef, type: 'REFERENCE' } } }
-        ]
-      });
-
-      // 5️⃣ Group photos by category
-      const categories = {};
-      photoQuery.records.forEach(photo => {
-        const catName = photo.fields.category?.value || 'Uncategorized';
-        if (!categories[catName]) {
-          categories[catName] = { 
-            categoryName: catName, 
-            photoURLs: [], 
-            captions: [], 
-            locations: [], 
-            coordinates: { latitude: place.fields.latitude.value, longitude: place.fields.longitude.value } 
-          };
-        }
-        const asset = photo.fields.photoData?.value;
-        categories[catName].photoURLs.push(asset?.downloadURL || null);
-        categories[catName].captions.push(photo.fields.caption?.value || '');
-        categories[catName].locations.push(''); // optional: fill if you have locations
-      });
-
-      // 6️⃣ Build final JSON
-      const result = {
-        tripId: progress.recordName,
-        tripName: `${place.fields.name.value}, ${place.fields.state.value}, ${place.fields.country.value}`,
-        tripDate: progress.fields.createdAt.value,
-        milesWalked: 0,
-        photoCount: photoQuery.records.length,
-        userId: user.recordName,
-        username: user.fields.username.value,
-        routeData: [], // optional
-        categories: Object.values(categories)
-      };
-
-      console.log(result);
-      return result;
-
-    } catch (err) {
-      console.error('Error loading trip:', err);
-      return { error: err.message };
-    }
+    const container = document.getElementById('tripCard');
+    container.innerHTML = `
+      <h1>${data.tripName}</h1>
+      <p><strong>Date:</strong> ${data.tripDate}</p>
+      <p><strong>Miles Walked:</strong> ${data.milesWalked}</p>
+      <p><strong>Photo Count:</strong> ${data.photoCount}</p>
+      <h2>Categories</h2>
+      ${data.categories.map(cat => `
+        <div class="category">
+          <h3>${cat.categoryName}</h3>
+          <div class="photos">
+            ${cat.photoURLs.map((url, i) => `<img src="${url}" alt="${cat.captions[i] || ''}">`).join('')}
+          </div>
+        </div>
+      `).join('')}
+    `;
+  } catch(err) {
+    console.error(err);
+    document.getElementById('tripCard').innerHTML = '<p>Error loading trip.</p>';
   }
+}
 
-  // --- INIT ---
-  const urlParams = new URLSearchParams(window.location.search);
-  const tripId = urlParams.get('trip');
-  fetchTripData(tripId);
+window.onload = loadTrip;
 </script>
+
 </body>
 </html>
