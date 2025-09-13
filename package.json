@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "vercel dev",
-    "start": "node api/create-trip.js"
+    "start": "node api/tripapi.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.42.0",
+    "node-fetch": "^2.6.7",
     "jsonwebtoken": "^9.0.0",
-    "node-fetch": "^3.3.2"
+    "@supabase/supabase-js": "^2.42.0"
   }
 }
