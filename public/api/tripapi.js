@@ -1,109 +1,128 @@
-import fs from 'fs';
-import path from 'path';
+// /api/tripapi.js
 import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 
-const PRIVATE_KEY_PATH = path.join(process.cwd(), 'private_key.pem'); // Your EC private key
-const KEY_ID = 'd1bb78c89aa70961797b9e17e9c25dd876cf0a84f19d20a8b5d7a7bcb26954fa';
-const TEAM_ID = '6542SYHMVS'; // Replace with your Apple Developer Team ID
 const CONTAINER = 'iCloud.keyninestudios.topten';
-const DATABASE_SCOPE = 'public';
+const DATABASE = 'public';
+const ENVIRONMENT = 'development'; // change to 'production' when ready
+const KEY_ID = 'd1bb78c89aa70961797b9e17e9c25dd876cf0a84f19d20a8b5d7a7bcb26954fa';
+const PRIVATE_KEY = process.env.CK_PRIVATE_KEY; // PEM key stored in Vercel env
+
+function generateJWT() {
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: KEY_ID,
+    iat: now,
+    exp: now + 300,
+    aud: 'https://apple-cloudkit.com',
+  };
+  return jwt.sign(payload, PRIVATE_KEY, { algorithm: 'ES256' });
+}
 
 export default async function handler(req, res) {
-  const tripId = req.query.trip;
-  if (!tripId) return res.status(400).json({ error: 'No trip specified' });
+  const { trip } = req.query;
+  if (!trip) return res.status(400).json({ error: 'Missing trip ID' });
 
   try {
-    // --- Create JWT for server-to-server ---
-    const privateKey = fs.readFileSync(PRIVATE_KEY_PATH, 'utf8');
-    const now = Math.floor(Date.now() / 1000);
-    const token = jwt.sign({}, privateKey, {
-      algorithm: 'ES256',
-      issuer: TEAM_ID,
-      issuedAt: now,
-      expiresIn: '5m',
-      keyid: KEY_ID,
-    });
+    const jwtToken = generateJWT();
 
-    const headers = {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
+    // Lookup Top10UserProgress record by recordName
+    const lookupRes = await fetch(
+      `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/lookup`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ records: [trip] }),
+      }
+    );
 
-    // --- Step 1: Fetch Top10UserProgress ---
-    const progressRes = await fetch(`https://api.apple-cloudkit.com/database/1/${CONTAINER}/development/${DATABASE_SCOPE}/records/lookup`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ recordNames: [tripId] }),
-    });
+    const lookupData = await lookupRes.json();
+    if (lookupData.records?.length === 0) {
+      return res.status(404).json({ error: 'Trip not found' });
+    }
 
-    const progressData = await progressRes.json();
-    if (!progressData.records || progressData.records.length === 0) throw new Error('Trip not found');
+    const progressRecord = lookupData.records[0];
 
-    const progressRecord = progressData.records[0].fields;
-    const userId = progressRecord.user.value.recordName;
-    const placeId = progressRecord.place.value.recordName;
-
-    // --- Step 2: Fetch Place ---
-    const placeRes = await fetch(`https://api.apple-cloudkit.com/database/1/${CONTAINER}/development/${DATABASE_SCOPE}/records/lookup`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ recordNames: [placeId] }),
-    });
-    const placeData = await placeRes.json();
-    const placeRecord = placeData.records[0].fields;
-
-    // --- Step 3: Fetch User ---
-    const userRes = await fetch(`https://api.apple-cloudkit.com/database/1/${CONTAINER}/development/${DATABASE_SCOPE}/records/lookup`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ recordNames: [userId] }),
-    });
+    // Fetch AppUsers
+    const userRef = progressRecord.fields.user.value.recordName;
+    const userRes = await fetch(
+      `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/lookup`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ records: [userRef] }),
+      }
+    );
     const userData = await userRes.json();
-    const userRecord = userData.records[0].fields;
 
-    // --- Step 4: Fetch Photos ---
-    const queryBody = {
-      recordType: 'Top10PhotoEntries',
-      filterBy: [
-        { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: { recordName: userId, type: 'REFERENCE' } } },
-        { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: { recordName: placeId, type: 'REFERENCE' } } }
-      ]
-    };
+    // Fetch Place
+    const placeRef = progressRecord.fields.place.value.recordName;
+    const placeRes = await fetch(
+      `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/lookup`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ records: [placeRef] }),
+      }
+    );
+    const placeData = await placeRes.json();
 
-    const photosRes = await fetch(`https://api.apple-cloudkit.com/database/1/${CONTAINER}/development/${DATABASE_SCOPE}/records/query`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(queryBody),
-    });
+    // Fetch Top10PhotoEntries
+    const queryRes = await fetch(
+      `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/query`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recordType: 'Top10PhotoEntries',
+          filterBy: [
+            { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: { recordName: userRef, type: 'REFERENCE' } } },
+            { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: { recordName: placeRef, type: 'REFERENCE' } } },
+          ],
+        }),
+      }
+    );
+    const photoData = await queryRes.json();
 
-    const photosData = await photosRes.json();
-
-    // --- Group photos by category ---
+    // Group photos by category
     const categories = {};
-    photosData.records.forEach(p => {
-      const catName = p.fields.category;
-      if (!categories[catName]) categories[catName] = { categoryName: catName, photoURLs: [], captions: [] };
-      const base64Data = p.fields.photoData.value; // assuming CKAsset returned as base64
-      categories[catName].photoURLs.push(`data:image/jpeg;base64,${base64Data}`);
-      categories[catName].captions.push(p.fields.caption || '');
+    (photoData.records || []).forEach((p) => {
+      const cat = p.fields.category;
+      if (!categories[cat]) categories[cat] = { photoURLs: [], captions: [], locations: [], coordinates: [] };
+      categories[cat].photoURLs.push(p.fields.photoData.value);
+      categories[cat].captions.push(p.fields.caption?.value || '');
+      categories[cat].locations.push(p.fields.location?.value || '');
+      categories[cat].coordinates.push({
+        latitude: p.fields.latitude?.value || 0,
+        longitude: p.fields.longitude?.value || 0,
+      });
     });
 
-    // --- Final Response ---
     res.status(200).json({
-      tripId,
-      tripName: `${placeRecord.name}, ${placeRecord.state}, ${placeRecord.country}`,
-      tripDate: progressRecord.completedAt?.value || null,
-      milesWalked: 0,
-      photoCount: photosData.records.length,
-      userId,
-      username: userRecord.username,
-      routeData: [],
-      categories: Object.values(categories),
+      tripId: progressRecord.recordName,
+      tripName: `${placeData.records[0].fields.name.value}, ${placeData.records[0].fields.state.value}, ${placeData.records[0].fields.country.value}`,
+      tripDate: progressRecord.fields.completedAt?.value || null,
+      milesWalked: progressRecord.fields.milesWalked?.value || 0,
+      photoCount: photoData.records?.length || 0,
+      userId: userData.records[0].recordName,
+      username: userData.records[0].fields.username.value,
+      routeData: progressRecord.fields.routeData?.value || [],
+      categories: Object.keys(categories).map((c) => ({ categoryName: c, ...categories[c] })),
     });
-
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 }
