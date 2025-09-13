@@ -109,31 +109,34 @@
     async function loadTrip() {
       const container = CloudKit.getDefaultContainer();
       const db = container.publicCloudDatabase;
-      const tripId = new URLSearchParams(window.location.search).get('trip');
 
+      const tripId = new URLSearchParams(window.location.search).get('trip');
       if (!tripId) {
-        document.getElementById("content").innerHTML = `<div class="error">No trip ID provided.</div>`;
+        document.getElementById("content").innerHTML = `<div class="error">No trip specified in URL</div>`;
         return;
       }
 
       try {
-        // Correct fetchRecords syntax with object wrapper
+        // Fetch Top10UserProgress
         const progressResult = await db.fetchRecords({ recordNames: [{ recordName: tripId }] });
         const progressRecord = progressResult.records[0];
-        if (!progressRecord) throw new Error('Trip not found');
+        if (!progressRecord) throw new Error("Trip not found");
 
-        const userRef = progressRecord.fields.user.value;
-        const placeRef = progressRecord.fields.place.value;
+        // Resolve references
+        const userRecordName = progressRecord.fields.user?.value?.recordName;
+        const placeRecordName = progressRecord.fields.place?.value?.recordName;
 
-        // Fetch user and place
+        if (!userRecordName || !placeRecordName) throw new Error("Missing user or place reference");
+
         const [userResult, placeResult] = await Promise.all([
-          db.fetchRecords({ recordNames: [{ recordName: userRef.recordName }] }),
-          db.fetchRecords({ recordNames: [{ recordName: placeRef.recordName }] })
+          db.fetchRecords({ recordNames: [{ recordName: userRecordName }] }),
+          db.fetchRecords({ recordNames: [{ recordName: placeRecordName }] })
         ]);
+
         const user = userResult.records[0];
         const place = placeResult.records[0];
 
-        // Fetch photo entries using correct reference format
+        // Fetch Top10PhotoEntries
         const photosQuery = await db.performQuery({
           recordType: 'Top10PhotoEntries',
           filterBy: [
@@ -141,6 +144,7 @@
             { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: { recordName: place.recordName } } }
           ]
         });
+
         const photos = photosQuery.records;
 
         // Header
@@ -169,7 +173,7 @@
         // Group photos by category
         const grouped = {};
         photos.forEach(p => {
-          const cat = p.fields.category.value;
+          const cat = p.fields.category?.value || "Uncategorized";
           if (!grouped[cat]) grouped[cat] = [];
           grouped[cat].push(p);
         });
@@ -184,7 +188,7 @@
           card.className = "category-card";
           card.innerHTML = `
             <div class="carousel-container">
-              <img src="${entries[0].fields.photoData.value.downloadURL}" class="carousel-image" alt="">
+              <img src="${entries[0].fields.photoData?.value?.downloadURL || ''}" class="carousel-image" alt="">
             </div>
             <div class="category-content">
               <div class="category-name">${cat}</div>
