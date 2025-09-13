@@ -107,84 +107,110 @@
     });
 
     async function loadTrip() {
-      const container = CloudKit.getDefaultContainer();
-      const db = container.publicCloudDatabase;
+  const container = CloudKit.getDefaultContainer();
+  const db = container.publicCloudDatabase;
 
-      try {
-        const [places, users, progress, photos] = await Promise.all([
-          db.performQuery({ recordType: "Place" }),
-          db.performQuery({ recordType: "User" }),
-          db.performQuery({ recordType: "Progress" }),
-          db.performQuery({ recordType: "PhotoEntry" })
-        ]);
+  // Grab tripId from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const tripId = urlParams.get('trip');
 
-        const place = places.records[0];
-        const user = users.records[0];
-        const prog = progress.records[0];
+  try {
+    // Fetch the Top10UserProgress record for this trip
+    const progressQuery = await db.performQuery({
+      recordType: 'Top10UserProgress',
+      filterBy: [{
+        fieldName: 'recordName',
+        comparator: 'EQUALS',
+        fieldValue: { value: tripId }
+      }]
+    });
 
-        // Header
-        document.getElementById("place-name").innerText = place.fields.name.value;
-        document.getElementById("trip-subtitle").innerText = "Explorer: " + user.fields.username.value;
+    const progressRecord = progressQuery.records[0];
+    if (!progressRecord) throw new Error('Trip not found');
 
-        // Build content
-        const content = document.getElementById("content");
-        content.innerHTML = "";
+    // Fetch referenced user and place
+    const userRef = progressRecord.fields.user.value;
+    const placeRef = progressRecord.fields.place.value;
 
-        // Trip card
-        const tripCard = document.createElement("div");
-        tripCard.className = "trip-card";
-        tripCard.innerHTML = `
-          <div class="trip-header">
-            <div>
-              <div class="trip-title">${place.fields.name.value}</div>
-              <div class="trip-username">${user.fields.username.value}</div>
-            </div>
+    const [userResult, placeResult] = await Promise.all([
+      db.fetchRecords({ recordNames: [userRef.recordName] }),
+      db.fetchRecords({ recordNames: [placeRef.recordName] })
+    ]);
+
+    const user = userResult.records[0];
+    const place = placeResult.records[0];
+
+    // Fetch Top10PhotoEntries for this trip
+    const photosQuery = await db.performQuery({
+      recordType: 'Top10PhotoEntries',
+      filterBy: [
+        { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: { recordName: user.recordName } } },
+        { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: { recordName: place.recordName } } }
+      ]
+    });
+
+    const photos = photosQuery.records;
+
+    // Update header
+    document.getElementById("place-name").innerText = `${place.fields.name.value}, ${place.fields.state.value}, ${place.fields.country.value}`;
+    document.getElementById("trip-subtitle").innerText = `Explorer: ${user.fields.username.value}`;
+
+    const content = document.getElementById("content");
+    content.innerHTML = "";
+
+    // Trip card
+    const tripCard = document.createElement("div");
+    tripCard.className = "trip-card";
+    tripCard.innerHTML = `
+      <div class="trip-header">
+        <div>
+          <div class="trip-title">${place.fields.name.value}</div>
+          <div class="trip-username">${user.fields.username.value}</div>
+        </div>
+      </div>
+      <div class="trip-stats">
+        <div class="stat-card"><div class="stat-number">${photos.length}</div><div class="stat-label">Photos</div></div>
+      </div>
+    `;
+    content.appendChild(tripCard);
+
+    // Group photos by category
+    const grouped = {};
+    photos.forEach(p => {
+      const cat = p.fields.category.value;
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(p);
+    });
+
+    const section = document.createElement("div");
+    section.className = "categories-section";
+    section.innerHTML = `<h2 class="section-title">Trip Highlights</h2><div class="categories-grid"></div>`;
+    const grid = section.querySelector(".categories-grid");
+
+    for (const [cat, entries] of Object.entries(grouped)) {
+      const card = document.createElement("div");
+      card.className = "category-card";
+      card.innerHTML = `
+        <div class="carousel-container">
+          <img src="${entries[0].fields.photoData.value.downloadURL}" class="carousel-image" alt="">
+        </div>
+        <div class="category-content">
+          <div class="category-name">${cat}</div>
+          <div class="captions-container">
+            ${entries.map(e => `<div class="caption-item">${e.fields.caption?.value || ''}</div>`).join("")}
           </div>
-          <div class="trip-stats">
-            <div class="stat-card"><div class="stat-number">${prog.fields.daysExplored.value}</div><div class="stat-label">Days Explored</div></div>
-            <div class="stat-card"><div class="stat-number">${prog.fields.milesWalked.value}</div><div class="stat-label">Miles Walked</div></div>
-          </div>
-        `;
-        content.appendChild(tripCard);
-
-        // Categories
-        const grouped = {};
-        photos.records.forEach(p => {
-          const cat = p.fields.category.value;
-          if (!grouped[cat]) grouped[cat] = [];
-          grouped[cat].push(p);
-        });
-
-        const section = document.createElement("div");
-        section.className = "categories-section";
-        section.innerHTML = `<h2 class="section-title">Trip Highlights</h2><div class="categories-grid"></div>`;
-        const grid = section.querySelector(".categories-grid");
-
-        for (const [cat, entries] of Object.entries(grouped)) {
-          const card = document.createElement("div");
-          card.className = "category-card";
-          card.innerHTML = `
-            <div class="carousel-container">
-              <img src="${entries[0].fields.photoData.value.downloadURL}" class="carousel-image" alt="">
-            </div>
-            <div class="category-content">
-              <div class="category-name">${cat}</div>
-              <div class="captions-container">
-                ${entries.map(e => `<div class="caption-item">${e.fields.caption.value}</div>`).join("")}
-              </div>
-            </div>
-          `;
-          grid.appendChild(card);
-        }
-
-        content.appendChild(section);
-
-      } catch (err) {
-        console.error(err);
-        document.getElementById("content").innerHTML = `<div class="error">Failed to load trip data.</div>`;
-      }
+        </div>
+      `;
+      grid.appendChild(card);
     }
 
+    content.appendChild(section);
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("content").innerHTML = `<div class="error">Failed to load trip data: ${err.message}</div>`;
+  }
+}
     loadTrip();
   </script>
 </body>
