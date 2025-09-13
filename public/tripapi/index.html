@@ -470,12 +470,14 @@
     <script>
         // CloudKit Configuration - UPDATE THESE VALUES
         const CLOUDKIT_CONFIG = {
-            containerIdentifier: 'iCloud.keyninestudios.topten', // Try with capital T
+            containerIdentifier: 'iCloud.keyninestudios.topten',
             apiKey: '87fad2c397513d683659124ee5317d117d6af88b1b1c35fa6d98c27e46568eed',
-            environment: 'development' // Try development first, then production
+            environment: 'development'
         };
 
+        // Global variables
         let cloudKit;
+        let database;
 
         async function initializeCloudKit() {
             try {
@@ -505,7 +507,7 @@
                     console.log('Auth setup error (might be expected):', authError);
                 }
                 
-                const database = container.publicCloudDatabase;
+                database = container.publicCloudDatabase;
                 console.log('Database obtained:', database);
                 
                 return database;
@@ -753,10 +755,15 @@
         }
 
         async function loadTrip() {
-            const tripId = getTripIdFromUrl();
-            if (!tripId) return showError('Invalid trip URL.');
-
             try {
+                // Initialize CloudKit first
+                if (!database) {
+                    await initializeCloudKit();
+                }
+
+                const tripId = getTripIdFromUrl();
+                if (!tripId) return showError('Invalid trip URL.');
+
                 // 1. Fetch Top10UserProgress record by recordName
                 const progressQuery = {
                     recordType: 'Top10UserProgress',
