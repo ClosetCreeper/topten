@@ -479,9 +479,29 @@
         let cloudKit;
         let database;
 
+        function waitForCloudKit() {
+            return new Promise((resolve) => {
+                if (typeof window.CloudKit !== 'undefined') {
+                    resolve();
+                } else {
+                    window.addEventListener('cloudkitloaded', resolve, { once: true });
+                    // Fallback timeout check
+                    const checkInterval = setInterval(() => {
+                        if (typeof window.CloudKit !== 'undefined') {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 100);
+                }
+            });
+        }
+
         async function initializeCloudKit() {
             try {
-                console.log('Initializing CloudKit with:', CLOUDKIT_CONFIG);
+                // Wait for CloudKit to load
+                await waitForCloudKit();
+                
+                console.log('CloudKit loaded, initializing with:', CLOUDKIT_CONFIG);
                 
                 cloudKit = window.CloudKit.configure({
                     containers: [{
