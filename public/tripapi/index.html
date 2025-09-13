@@ -4,75 +4,181 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TopTen Trip</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8f9fa;
+      color: #222;
+    }
+
+    .trip-card {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 2rem;
+    }
+
+    .trip-card h1 {
+      margin: 0 0 0.25rem;
+      font-size: 2rem;
+      color: #008f5d;
+    }
+
+    .trip-card .user {
+      margin: 0 0 1.5rem;
+      font-size: 1rem;
+      color: #666;
+    }
+
+    .stats {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat {
+      background: #f0f0f0;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    .category {
+      margin-bottom: 2rem;
+    }
+
+    .category h3 {
+      margin-bottom: 0.75rem;
+      font-size: 1.2rem;
+      color: #444;
+    }
+
+    .carousel {
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .slide {
+      display: none;
+      text-align: center;
+    }
+
+    .slide.active {
+      display: block;
+    }
+
+    .slide img {
+      max-width: 100%;
+      border-radius: 12px 12px 0 0;
+      display: block;
+    }
+
+    .caption {
+      margin: 0;
+      padding: 0.5rem;
+      background: #fafafa;
+      border-top: 1px solid #eee;
+      font-style: italic;
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    .carousel button {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .carousel button.prev { left: 10px; }
+    .carousel button.next { right: 10px; }
+
+    .error {
+      text-align: center;
+      margin: 3rem;
+      padding: 1rem;
+      color: #b00020;
+      background: #fdd;
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
   <main id="tripContainer"></main>
 
   <script type="module">
-    import { cloudKit } from "./cloudkit.js"; // adjust to your CK setup
+    // Replace this stub with your actual CloudKit setup
+    const cloudKit = {
+      async fetchRecords({ recordType }) {
+        console.log("Fetching", recordType);
+        // fake test data so you can see styling
+        if (recordType === "Progress") {
+          return { records: [{ fields: { placeId: { value: "place1" }, userId: { value: "user1" }, daysExplored: { value: 3 }, milesWalked: { value: 0 } } }] };
+        }
+        if (recordType === "Place") {
+          return { records: [{ fields: { name: { value: "London" } } }] };
+        }
+        if (recordType === "User") {
+          return { records: [{ fields: { username: { value: "Kehoe" } } }] };
+        }
+        if (recordType === "PhotoEntry") {
+          return {
+            records: [
+              { fields: { category: { value: "Landmarks" }, photoData: { value: { downloadURL: "https://picsum.photos/600/400?1" } }, caption: { value: "Big Ben!" } } },
+              { fields: { category: { value: "Landmarks" }, photoData: { value: { downloadURL: "https://picsum.photos/600/400?2" } }, caption: { value: "Tower Bridge" } } },
+              { fields: { category: { value: "Food" }, photoData: { value: { downloadURL: "https://picsum.photos/600/400?3" } }, caption: { value: "Fish and Chips" } } },
+            ],
+          };
+        }
+        return { records: [] };
+      }
+    };
 
     async function loadTrip() {
       try {
-        // 1. Get tripId from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const tripId = urlParams.get("tripId");
-        if (!tripId) throw new Error("Missing tripId in URL.");
+        const tripId = "fakeTrip"; // TODO: pull from URL if needed
 
-        // 2. Fetch progress record
-        const progressRes = await cloudKit.fetchRecords({
-          recordType: "Progress",
-          filterBy: [{ fieldName: "tripId", comparator: "EQUALS", value: tripId }],
-        });
-        if (!progressRes.records.length) throw new Error("Trip not found.");
+        // fetch data
+        const progressRes = await cloudKit.fetchRecords({ recordType: "Progress" });
         const progress = progressRes.records[0].fields;
+        const placeRes = await cloudKit.fetchRecords({ recordType: "Place" });
+        const place = placeRes.records[0].fields;
+        const userRes = await cloudKit.fetchRecords({ recordType: "User" });
+        const user = userRes.records[0].fields;
+        const entriesRes = await cloudKit.fetchRecords({ recordType: "PhotoEntry" });
 
-        // 3. Fetch place info
-        const placeRes = await cloudKit.fetchRecords({
-          recordType: "Place",
-          filterBy: [{ fieldName: "recordName", comparator: "EQUALS", value: progress.placeId.value }],
-        });
-        const place = placeRes.records[0]?.fields;
-
-        // 4. Fetch user info
-        const userRes = await cloudKit.fetchRecords({
-          recordType: "User",
-          filterBy: [{ fieldName: "recordName", comparator: "EQUALS", value: progress.userId.value }],
-        });
-        const user = userRes.records[0]?.fields;
-
-        // 5. Fetch photo entries
-        const entriesRes = await cloudKit.fetchRecords({
-          recordType: "PhotoEntry",
-          filterBy: [{ fieldName: "tripId", comparator: "EQUALS", value: tripId }],
-        });
-
-        // 6. Group entries by category
         const categoriesMap = {};
         for (const entry of entriesRes.records) {
-          const category = entry.fields.category.value;
-          if (!categoriesMap[category]) {
-            categoriesMap[category] = { photos: [], captions: [] };
-          }
-          if (entry.fields.photoData?.value?.downloadURL) {
-            categoriesMap[category].photos.push(entry.fields.photoData.value.downloadURL);
-            categoriesMap[category].captions.push(entry.fields.caption?.value || "");
-          }
+          const cat = entry.fields.category.value;
+          if (!categoriesMap[cat]) categoriesMap[cat] = { photos: [], captions: [] };
+          categoriesMap[cat].photos.push(entry.fields.photoData.value.downloadURL);
+          categoriesMap[cat].captions.push(entry.fields.caption.value || "");
         }
 
-        // 7. Prepare trip data
         const tripData = {
-          name: place?.name?.value || "Unknown Place",
-          user: user?.username?.value || "Anonymous",
+          name: place.name.value,
+          user: user.username.value,
           stats: {
             photosTaken: entriesRes.records.length,
-            daysExplored: progress.daysExplored?.value || 0,
-            milesWalked: progress.milesWalked?.value || 0,
+            daysExplored: progress.daysExplored.value,
+            milesWalked: progress.milesWalked.value,
           },
           categories: categoriesMap,
         };
 
-        // 8. Render trip card
         renderTrip(tripData);
       } catch (err) {
         console.error("Error loading trip:", err);
@@ -84,7 +190,6 @@
     function renderTrip(trip) {
       const container = document.getElementById("tripContainer");
 
-      // Stats (hide miles if 0)
       let statsHtml = `
         <div class="stat">📸 ${trip.stats.photosTaken} Photos</div>
         <div class="stat">🗓️ ${trip.stats.daysExplored} Days</div>
@@ -93,7 +198,6 @@
         statsHtml += `<div class="stat">🚶 ${trip.stats.milesWalked} Miles</div>`;
       }
 
-      // Categories with carousels
       let categoriesHtml = "";
       for (const [cat, data] of Object.entries(trip.categories)) {
         categoriesHtml += `
