@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TopTen - Trip Share</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.apple-cloudkit.com/ck/2/cloudkit.js"></script>
     <style>
         * {
             margin: 0;
@@ -467,7 +468,36 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'https://topten.keyninestudios.com/tripapi';
+        // CloudKit Configuration
+        const CLOUDKIT_CONFIG = {
+            containerIdentifier: 'iCloud.com.keyninestudios.topten',
+            apiKey: '87fad2c397513d683659124ee5317d117d6af88b1b1c35fa6d98c27e46568eed',
+            environment: 'production'
+        };
+
+        let cloudKit;
+
+        async function initializeCloudKit() {
+            try {
+                cloudKit = window.CloudKit.configure({
+                    containers: [{
+                        containerIdentifier: CLOUDKIT_CONFIG.containerIdentifier,
+                        apiTokenAuth: {
+                            apiToken: CLOUDKIT_CONFIG.apiKey,
+                            persist: false
+                        },
+                        environment: CLOUDKIT_CONFIG.environment
+                    }]
+                });
+
+                const container = cloudKit.getDefaultContainer();
+                const database = container.publicCloudDatabase;
+                return database;
+            } catch (error) {
+                console.error('Failed to initialize CloudKit:', error);
+                throw error;
+            }
+        }
 
         function showError(message) {
             const content = document.getElementById('content');
@@ -477,6 +507,34 @@
                     <p>${message}</p>
                 </div>
             `;
+        }
+
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        async function fetchPhotoData(photoEntries) {
+            const photoPromises = photoEntries.map(async (entry) => {
+                if (entry.fields.photoData && entry.fields.photoData.value) {
+                    try {
+                        const response = await fetch(entry.fields.photoData.value.downloadURL);
+                        const arrayBuffer = await response.arrayBuffer();
+                        const base64 = arrayBufferToBase64(arrayBuffer);
+                        return `data:image/jpeg;base64,${base64}`;
+                    } catch (error) {
+                        console.error('Failed to fetch photo:', error);
+                        return null;
+                    }
+                }
+                return null;
+            });
+
+            return await Promise.all(photoPromises);
         }
 
         function displayTrip(trip) {
@@ -554,12 +612,7 @@
                 cat.photoURLs.forEach((base64Data, i) => {
                     const img = document.createElement('img');
                     img.className = 'carousel-image';
-                    // Handle base64 data URLs
-                    if (base64Data.startsWith('data:image/')) {
-                        img.src = base64Data;
-                    } else {
-                        img.src = `data:image/jpeg;base64,${base64Data}`;
-                    }
+                    img.src = base64Data;
                     img.alt = `Photo ${i + 1}`;
                     track.appendChild(img);
                 });
@@ -688,28 +741,131 @@
             if (!tripId) return showError('Invalid trip URL.');
 
             try {
-                const response = await fetch(`${API_BASE_URL}?trip=${encodeURIComponent(tripId)}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${CLOUDKIT_API_KEY}`,
-                        'Content-Type': 'application/json'
+                const database = await initializeCloudKit();
+
+                // 1. Fetch Top10UserProgress record by recordName
+                const progressQuery = {
+                    recordType: 'Top10UserProgress',
+                    filterBy: [{
+                        fieldName: 'recordName',
+                        fieldValue: { value: tripId },
+                        comparator: 'EQUALS'
+                    }]
+                };
+
+                const progressResponse = await database.performQuery(progressQuery);
+                if (!progressResponse.records || progressResponse.records.length === 0) {
+                    throw new Error('Trip not found');
+                }
+
+                const progressRecord = progressResponse.records[0];
+                const userId = progressRecord.fields.user.value.recordName;
+                const placeId = progressRecord.fields.place.value.recordName;
+
+                // 2. Fetch Top10Places record by placeId
+                const placeQuery = {
+                    recordType: 'Top10Places',
+                    filterBy: [{
+                        fieldName: 'recordName',
+                        fieldValue: { value: placeId },
+                        comparator: 'EQUALS'
+                    }]
+                };
+
+                const placeResponse = await database.performQuery(placeQuery);
+                if (!placeResponse.records || placeResponse.records.length === 0) {
+                    throw new Error('Place not found');
+                }
+
+                const placeRecord = placeResponse.records[0];
+
+                // 3. Fetch AppUsers record by userId
+                const userQuery = {
+                    recordType: 'AppUsers',
+                    filterBy: [{
+                        fieldName: 'recordName',
+                        fieldValue: { value: userId },
+                        comparator: 'EQUALS'
+                    }]
+                };
+
+                const userResponse = await database.performQuery(userQuery);
+                if (!userResponse.records || userResponse.records.length === 0) {
+                    throw new Error('User not found');
+                }
+
+                const userRecord = userResponse.records[0];
+
+                // 4. Query Top10PhotoEntries where user=userId AND place=placeId
+                const photoQuery = {
+                    recordType: 'Top10PhotoEntries',
+                    filterBy: [
+                        {
+                            fieldName: 'user',
+                            fieldValue: { value: userId },
+                            comparator: 'EQUALS'
+                        },
+                        {
+                            fieldName: 'place',
+                            fieldValue: { value: placeId },
+                            comparator: 'EQUALS'
+                        }
+                    ]
+                };
+
+                const photoResponse = await database.performQuery(photoQuery);
+                const photoEntries = photoResponse.records || [];
+
+                // 5. Group photos by category and convert to base64 URLs
+                const categoriesMap = {};
+                
+                for (const entry of photoEntries) {
+                    const category = entry.fields.category.value;
+                    
+                    if (!categoriesMap[category]) {
+                        categoriesMap[category] = {
+                            categoryName: category,
+                            photoURLs: [],
+                            captions: [],
+                            locations: [placeRecord.fields.name.value],
+                            coordinates: {
+                                latitude: placeRecord.fields.latitude.value,
+                                longitude: placeRecord.fields.longitude.value
+                            }
+                        };
                     }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    
+                    // Fetch photo data and convert to base64
+                    if (entry.fields.photoData && entry.fields.photoData.value) {
+                        try {
+                            const response = await fetch(entry.fields.photoData.value.downloadURL);
+                            const arrayBuffer = await response.arrayBuffer();
+                            const base64 = arrayBufferToBase64(arrayBuffer);
+                            categoriesMap[category].photoURLs.push(`data:image/jpeg;base64,${base64}`);
+                            categoriesMap[category].captions.push(entry.fields.caption?.value || '');
+                        } catch (error) {
+                            console.error('Failed to fetch photo:', error);
+                        }
+                    }
                 }
-                
-                const tripData = await response.json();
 
-                if (!tripData || !tripData.tripId) {
-                    throw new Error('Invalid trip data received');
-                }
+                // 6. Transform to expected format
+                const transformedTrip = {
+                    tripId: tripId,
+                    tripName: `${placeRecord.fields.name.value}, ${placeRecord.fields.state?.value || ''}, ${placeRecord.fields.country.value}`.replace(/, ,/, ','),
+                    tripDate: progressRecord.fields.completedAt.value,
+                    milesWalked: 0, // Not available in current schema
+                    photoCount: photoEntries.length,
+                    userId: userId,
+                    username: userRecord.fields.username.value,
+                    routeData: [],
+                    categories: Object.values(categoriesMap)
+                };
 
-                displayTrip(tripData);
+                displayTrip(transformedTrip);
 
                 // Initialize carousels for each category
-                tripData.categories.forEach((category, index) => {
+                transformedTrip.categories.forEach((category, index) => {
                     initializeCarousel(index, category.photoURLs.length);
                 });
 
