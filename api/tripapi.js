@@ -4,71 +4,20 @@ import fetch from 'node-fetch';
 
 const CONTAINER = 'iCloud.keyninestudios.topten';
 const DATABASE = 'public';
-const ENVIRONMENT = 'development'; // Change to 'production' when ready
+const ENVIRONMENT = 'development'; // switch to 'production' when ready
 const KEY_ID = 'd1bb78c89aa70961797b9e17e9c25dd876cf0a84f19d20a8b5d7a7bcb26954fa';
 const PRIVATE_KEY = process.env.CK_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
-if (!PRIVATE_KEY) {
-  console.error('ERROR: CK_PRIVATE_KEY is not defined in environment variables.');
-}
-
 function generateJWT() {
+  if (!PRIVATE_KEY) throw new Error('CK_PRIVATE_KEY not set or malformed');
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: KEY_ID,
     iat: now,
-    exp: now + 300, // token valid for 5 minutes
+    exp: now + 300, // 5 minutes
     aud: 'https://apple-cloudkit.com',
   };
   return jwt.sign(payload, PRIVATE_KEY, { algorithm: 'ES256' });
-}
-
-async function lookupRecords(recordNames, jwtToken) {
-  const res = await fetch(
-    `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/lookup`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${jwtToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ records: recordNames }),
-    }
-  );
-
-  const data = await res.json();
-  if (!data.records) throw new Error('Lookup failed or no records found.');
-  return data.records;
-}
-
-async function queryPhotoEntries(userRef, placeRef, jwtToken) {
-  const res = await fetch(
-    `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/query`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${jwtToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        recordType: 'Top10PhotoEntries',
-        filterBy: [
-          {
-            fieldName: 'user',
-            comparator: 'EQUALS',
-            fieldValue: { value: { recordName: userRef, type: 'REFERENCE' } },
-          },
-          {
-            fieldName: 'place',
-            comparator: 'EQUALS',
-            fieldValue: { value: { recordName: placeRef, type: 'REFERENCE' } },
-          },
-        ],
-      }),
-    }
-  );
-  const data = await res.json();
-  return data.records || [];
 }
 
 export default async function handler(req, res) {
@@ -76,28 +25,83 @@ export default async function handler(req, res) {
     const { trip } = req.query;
     if (!trip) return res.status(400).json({ error: 'Missing trip ID' });
 
+    console.log('Trip requested:', trip);
+
     const jwtToken = generateJWT();
 
-    // 1️⃣ Fetch Top10UserProgress
-    const [progressRecord] = await lookupRecords([trip], jwtToken);
+    // --- Lookup Top10UserProgress record ---
+    const lookupRes = await fetch(
+      `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/lookup`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${jwtToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: [trip] }),
+      }
+    );
+    const lookupData = await lookupRes.json();
+    console.log('Top10UserProgress lookup:', lookupData);
 
-    // 2️⃣ Fetch AppUser
-    const userRef = progressRecord.fields.user.value.recordName;
-    const [userRecord] = await lookupRecords([userRef], jwtToken);
+    if (!lookupData.records || lookupData.records.length === 0) {
+      return res.status(404).json({ error: 'Trip not found' });
+    }
+    const progressRecord = lookupData.records[0];
 
-    // 3️⃣ Fetch Place
-    const placeRef = progressRecord.fields.place.value.recordName;
-    const [placeRecord] = await lookupRecords([placeRef], jwtToken);
+    // --- Fetch AppUsers ---
+    const userRef = progressRecord.fields.user?.value?.recordName;
+    if (!userRef) return res.status(500).json({ error: 'User reference missing' });
 
-    // 4️⃣ Fetch photo entries
-    const photoEntries = await queryPhotoEntries(userRef, placeRef, jwtToken);
+    const userRes = await fetch(
+      `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/lookup`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${jwtToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: [userRef] }),
+      }
+    );
+    const userData = await userRes.json();
+    console.log('User lookup:', userData);
+    const userRecord = userData.records?.[0] || {};
 
-    // 5️⃣ Group photos by category
+    // --- Fetch Place ---
+    const placeRef = progressRecord.fields.place?.value?.recordName;
+    if (!placeRef) return res.status(500).json({ error: 'Place reference missing' });
+
+    const placeRes = await fetch(
+      `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/lookup`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${jwtToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: [placeRef] }),
+      }
+    );
+    const placeData = await placeRes.json();
+    console.log('Place lookup:', placeData);
+    const placeRecord = placeData.records?.[0] || {};
+
+    // --- Fetch Top10PhotoEntries ---
+    const queryRes = await fetch(
+      `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/query`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${jwtToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recordType: 'Top10PhotoEntries',
+          filterBy: [
+            { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: { recordName: userRef, type: 'REFERENCE' } } },
+            { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: { recordName: placeRef, type: 'REFERENCE' } } },
+          ],
+        }),
+      }
+    );
+    const photoData = await queryRes.json();
+    console.log('Photo entries:', photoData);
+
+    // --- Group photos by category ---
     const categories = {};
-    photoEntries.forEach((p) => {
+    (photoData.records || []).forEach((p) => {
       const cat = p.fields.category;
       if (!categories[cat]) categories[cat] = { photoURLs: [], captions: [], locations: [], coordinates: [] };
-      categories[cat].photoURLs.push(p.fields.photoData.value);
+      categories[cat].photoURLs.push(p.fields.photoData?.value || '');
       categories[cat].captions.push(p.fields.caption?.value || '');
       categories[cat].locations.push(p.fields.location?.value || '');
       categories[cat].coordinates.push({
@@ -106,20 +110,20 @@ export default async function handler(req, res) {
       });
     });
 
-    // ✅ Respond with JSON
+    // --- Build response ---
     res.status(200).json({
       tripId: progressRecord.recordName,
-      tripName: `${placeRecord.fields.name.value}, ${placeRecord.fields.state.value}, ${placeRecord.fields.country.value}`,
-      tripDate: progressRecord.fields.completedAt?.value || null,
-      milesWalked: progressRecord.fields.milesWalked?.value || 0,
-      photoCount: photoEntries.length,
-      userId: userRecord.recordName,
-      username: userRecord.fields.username.value,
-      routeData: progressRecord.fields.routeData?.value || [],
+      tripName: `${placeRecord.fields?.name?.value || 'Unknown'}, ${placeRecord.fields?.state?.value || ''}, ${placeRecord.fields?.country?.value || ''}`,
+      tripDate: progressRecord.fields?.completedAt?.value || null,
+      milesWalked: progressRecord.fields?.milesWalked?.value || 0,
+      photoCount: photoData.records?.length || 0,
+      userId: userRecord.recordName || null,
+      username: userRecord.fields?.username?.value || 'Unknown',
+      routeData: progressRecord.fields?.routeData?.value || [],
       categories: Object.keys(categories).map((c) => ({ categoryName: c, ...categories[c] })),
     });
   } catch (err) {
-    console.error('TripAPI ERROR:', err);
+    console.error('Server error:', err.stack || err);
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 }
