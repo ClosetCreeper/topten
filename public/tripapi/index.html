@@ -8,6 +8,7 @@
 <body>
 <script src="https://cdn.apple-cloudkit.com/ck/2/cloudkit.js"></script>
 <script>
+  // --- CONFIG ---
   CloudKit.configure({
     containers: [{
       containerIdentifier: 'iCloud.keyninestudios.topten',
@@ -19,26 +20,34 @@
   const db = CloudKit.getDefaultContainer().publicCloudDatabase;
 
   async function fetchTripData(tripId) {
-    try {
-      if (!tripId) throw new Error('No trip ID provided');
+    if (!tripId) {
+      console.error('Trip ID not provided in URL');
+      return;
+    }
 
-      // 1. Fetch Top10UserProgress by recordName
+    try {
+      // 1️⃣ Fetch the Top10UserProgress record
       const progressRes = await db.fetchRecords({ recordNames: [tripId] });
       const progress = progressRes.records[0];
       if (!progress) throw new Error('Trip not found');
 
-      const userRef = progress.fields.user.value.recordName;
-      const placeRef = progress.fields.place.value.recordName;
+      // Safely get user and place record names
+      const userRef = progress.fields.user?.value?.recordName;
+      const placeRef = progress.fields.place?.value?.recordName;
 
-      // 2. Fetch Top10Places record
+      if (!userRef || !placeRef) throw new Error('User or Place reference missing');
+
+      // 2️⃣ Fetch Top10Places record
       const placeRes = await db.fetchRecords({ recordNames: [placeRef] });
       const place = placeRes.records[0];
+      if (!place) throw new Error('Place not found');
 
-      // 3. Fetch AppUsers record
+      // 3️⃣ Fetch AppUsers record
       const userRes = await db.fetchRecords({ recordNames: [userRef] });
       const user = userRes.records[0];
+      if (!user) throw new Error('User not found');
 
-      // 4. Query Top10PhotoEntries for this user and place
+      // 4️⃣ Query Top10PhotoEntries for this user and place
       const photoQuery = await db.performQuery({
         recordType: 'Top10PhotoEntries',
         filterBy: [
@@ -47,39 +56,40 @@
         ]
       });
 
-      // 5. Group photos by category
+      // 5️⃣ Group photos by category
       const categories = {};
       photoQuery.records.forEach(photo => {
-        const category = photo.fields.category.value;
-        if (!categories[category]) {
-          categories[category] = { categoryName: category, photoURLs: [], captions: [], locations: [], coordinates: {} };
+        const catName = photo.fields.category?.value || 'Uncategorized';
+        if (!categories[catName]) {
+          categories[catName] = { 
+            categoryName: catName, 
+            photoURLs: [], 
+            captions: [], 
+            locations: [], 
+            coordinates: { latitude: place.fields.latitude.value, longitude: place.fields.longitude.value } 
+          };
         }
-        const asset = photo.fields.photoData.value;
-        const base64Image = asset ? asset.downloadURL : null; // You can replace with base64 if needed
-        categories[category].photoURLs.push(base64Image);
-        categories[category].captions.push(photo.fields.caption?.value || '');
-        categories[category].locations.push(''); // optional: fill with location data if available
-        categories[category].coordinates = {
-          latitude: place.fields.latitude.value,
-          longitude: place.fields.longitude.value
-        };
+        const asset = photo.fields.photoData?.value;
+        categories[catName].photoURLs.push(asset?.downloadURL || null);
+        categories[catName].captions.push(photo.fields.caption?.value || '');
+        categories[catName].locations.push(''); // optional: fill if you have locations
       });
 
-      // 6. Build response
-      const response = {
+      // 6️⃣ Build final JSON
+      const result = {
         tripId: progress.recordName,
         tripName: `${place.fields.name.value}, ${place.fields.state.value}, ${place.fields.country.value}`,
         tripDate: progress.fields.createdAt.value,
-        milesWalked: 0, // optional: calculate if you store distance
+        milesWalked: 0,
         photoCount: photoQuery.records.length,
         userId: user.recordName,
         username: user.fields.username.value,
-        routeData: [], // optional: add route data if stored
+        routeData: [], // optional
         categories: Object.values(categories)
       };
 
-      console.log(JSON.stringify(response, null, 2));
-      return response;
+      console.log(result);
+      return result;
 
     } catch (err) {
       console.error('Error loading trip:', err);
@@ -87,7 +97,7 @@
     }
   }
 
-  // Example usage: parse URL param and fetch trip
+  // --- INIT ---
   const urlParams = new URLSearchParams(window.location.search);
   const tripId = urlParams.get('trip');
   fetchTripData(tripId);
