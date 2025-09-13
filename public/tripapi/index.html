@@ -3,22 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Top 10 Trip Viewer</title>
-<style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); min-height:100vh;color:#333;margin:0;padding:20px;}
-  .container {max-width:600px;margin:0 auto;}
-  h1 {text-align:center;color:white;}
-  .trip-card {background:rgba(255,255,255,0.95);border-radius:15px;padding:15px;margin-bottom:15px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-  .trip-card h2 {margin:0;font-size:1.2rem;}
-  .trip-card p {margin:5px 0;}
-</style>
+<title>Top 10 Trip API</title>
 </head>
 <body>
-<div class="container">
-  <h1>Trip Details</h1>
-  <div id="trip-container">Loading...</div>
-</div>
-
 <script src="https://cdn.apple-cloudkit.com/ck/2/cloudkit.js"></script>
 <script>
   CloudKit.configure({
@@ -31,51 +18,79 @@
 
   const db = CloudKit.getDefaultContainer().publicCloudDatabase;
 
-  async function loadTrip(tripId) {
+  async function fetchTripData(tripId) {
     try {
-      const tripResponse = await db.fetchRecords([tripId]);
-      if(tripResponse.hasErrors) throw new Error(tripResponse.errors[0].message);
-      const trip = tripResponse.records[0];
+      if (!tripId) throw new Error('No trip ID provided');
 
-      if(!trip.fields.user?.value?.recordName) throw new Error("User reference missing recordName");
-      if(!trip.fields.place?.value?.recordName) throw new Error("Place reference missing recordName");
+      // 1. Fetch Top10UserProgress by recordName
+      const progressRes = await db.fetchRecords({ recordNames: [tripId] });
+      const progress = progressRes.records[0];
+      if (!progress) throw new Error('Trip not found');
 
-      const [userResp, placeResp] = await Promise.all([
-        db.fetchRecords([trip.fields.user.value.recordName]),
-        db.fetchRecords([trip.fields.place.value.recordName])
-      ]);
+      const userRef = progress.fields.user.value.recordName;
+      const placeRef = progress.fields.place.value.recordName;
 
-      const user = userResp.records[0];
-      const place = placeResp.records[0];
+      // 2. Fetch Top10Places record
+      const placeRes = await db.fetchRecords({ recordNames: [placeRef] });
+      const place = placeRes.records[0];
 
-      const photosQuery = await db.performQuery({
+      // 3. Fetch AppUsers record
+      const userRes = await db.fetchRecords({ recordNames: [userRef] });
+      const user = userRes.records[0];
+
+      // 4. Query Top10PhotoEntries for this user and place
+      const photoQuery = await db.performQuery({
         recordType: 'Top10PhotoEntries',
         filterBy: [
-          { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: { recordName: user.recordName, type:"REFERENCE"} } },
-          { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: { recordName: place.recordName, type:"REFERENCE"} } }
+          { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: { recordName: userRef, type: 'REFERENCE' } } },
+          { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: { recordName: placeRef, type: 'REFERENCE' } } }
         ]
       });
 
-      const photos = photosQuery.records;
+      // 5. Group photos by category
+      const categories = {};
+      photoQuery.records.forEach(photo => {
+        const category = photo.fields.category.value;
+        if (!categories[category]) {
+          categories[category] = { categoryName: category, photoURLs: [], captions: [], locations: [], coordinates: {} };
+        }
+        const asset = photo.fields.photoData.value;
+        const base64Image = asset ? asset.downloadURL : null; // You can replace with base64 if needed
+        categories[category].photoURLs.push(base64Image);
+        categories[category].captions.push(photo.fields.caption?.value || '');
+        categories[category].locations.push(''); // optional: fill with location data if available
+        categories[category].coordinates = {
+          latitude: place.fields.latitude.value,
+          longitude: place.fields.longitude.value
+        };
+      });
 
-      const container = document.getElementById('trip-container');
-      container.innerHTML = `
-        <div class="trip-card">
-          <h2>${trip.fields.title || "Trip"}</h2>
-          <p><strong>User:</strong> ${user.fields.name}</p>
-          <p><strong>Place:</strong> ${place.fields.name}</p>
-          <p><strong>Photos:</strong></p>
-          <ul>${photos.map(p=>`<li>${p.fields.title}</li>`).join('')}</ul>
-        </div>
-      `;
-    } catch(e) {
-      console.error(e);
-      document.getElementById('trip-container').innerHTML = `<p>Error: ${e.message}</p>`;
+      // 6. Build response
+      const response = {
+        tripId: progress.recordName,
+        tripName: `${place.fields.name.value}, ${place.fields.state.value}, ${place.fields.country.value}`,
+        tripDate: progress.fields.createdAt.value,
+        milesWalked: 0, // optional: calculate if you store distance
+        photoCount: photoQuery.records.length,
+        userId: user.recordName,
+        username: user.fields.username.value,
+        routeData: [], // optional: add route data if stored
+        categories: Object.values(categories)
+      };
+
+      console.log(JSON.stringify(response, null, 2));
+      return response;
+
+    } catch (err) {
+      console.error('Error loading trip:', err);
+      return { error: err.message };
     }
   }
 
-  // Replace with your actual trip record ID
-  loadTrip('EA35C155-F2C3-4478-9B81-279DA9CAAF6A');
+  // Example usage: parse URL param and fetch trip
+  const urlParams = new URLSearchParams(window.location.search);
+  const tripId = urlParams.get('trip');
+  fetchTripData(tripId);
 </script>
 </body>
 </html>
