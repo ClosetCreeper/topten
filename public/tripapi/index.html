@@ -102,53 +102,54 @@
       containers: [{
         containerIdentifier: "iCloud.keyninestudios.topten",
         apiTokenAuth: { apiToken: "1bab850cbdcaffa45d64df96aa7ac56781f0028a3f34dddb58276819a7859e59", persist: true },
-        environment: "development" // change to "production" when live
+        environment: "development"
       }]
     });
 
     async function loadTrip() {
       const container = CloudKit.getDefaultContainer();
       const db = container.publicCloudDatabase;
-    
-      const urlParams = new URLSearchParams(window.location.search);
-      const tripId = urlParams.get('trip');
-    
+      const tripId = new URLSearchParams(window.location.search).get('trip');
+
+      if (!tripId) {
+        document.getElementById("content").innerHTML = `<div class="error">No trip ID provided.</div>`;
+        return;
+      }
+
       try {
-        // Fetch the Top10UserProgress record directly by recordName
-        const progressResult = await db.fetchRecords({ recordNames: [tripId] });
+        // Correct fetchRecords syntax with object wrapper
+        const progressResult = await db.fetchRecords({ recordNames: [{ recordName: tripId }] });
         const progressRecord = progressResult.records[0];
         if (!progressRecord) throw new Error('Trip not found');
-    
-        // Resolve user and place references
+
         const userRef = progressRecord.fields.user.value;
         const placeRef = progressRecord.fields.place.value;
-    
+
+        // Fetch user and place
         const [userResult, placeResult] = await Promise.all([
-          db.fetchRecords({ recordNames: [userRef.recordName] }),
-          db.fetchRecords({ recordNames: [placeRef.recordName] })
+          db.fetchRecords({ recordNames: [{ recordName: userRef.recordName }] }),
+          db.fetchRecords({ recordNames: [{ recordName: placeRef.recordName }] })
         ]);
-    
         const user = userResult.records[0];
         const place = placeResult.records[0];
-    
-        // Fetch photo entries for this user and place
+
+        // Fetch photo entries using correct reference format
         const photosQuery = await db.performQuery({
           recordType: 'Top10PhotoEntries',
           filterBy: [
-            { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: user.recordName } },
-            { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: place.recordName } }
+            { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: { recordName: user.recordName } } },
+            { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: { recordName: place.recordName } } }
           ]
         });
-    
         const photos = photosQuery.records;
-    
+
         // Header
         document.getElementById("place-name").innerText = `${place.fields.name.value}, ${place.fields.state.value}, ${place.fields.country.value}`;
         document.getElementById("trip-subtitle").innerText = `Explorer: ${user.fields.username.value}`;
-    
+
         const content = document.getElementById("content");
         content.innerHTML = "";
-    
+
         // Trip card
         const tripCard = document.createElement("div");
         tripCard.className = "trip-card";
@@ -164,7 +165,7 @@
           </div>
         `;
         content.appendChild(tripCard);
-    
+
         // Group photos by category
         const grouped = {};
         photos.forEach(p => {
@@ -172,12 +173,12 @@
           if (!grouped[cat]) grouped[cat] = [];
           grouped[cat].push(p);
         });
-    
+
         const section = document.createElement("div");
         section.className = "categories-section";
         section.innerHTML = `<h2 class="section-title">Trip Highlights</h2><div class="categories-grid"></div>`;
         const grid = section.querySelector(".categories-grid");
-    
+
         for (const [cat, entries] of Object.entries(grouped)) {
           const card = document.createElement("div");
           card.className = "category-card";
@@ -194,9 +195,9 @@
           `;
           grid.appendChild(card);
         }
-    
+
         content.appendChild(section);
-    
+
       } catch (err) {
         console.error(err);
         document.getElementById("content").innerHTML = `<div class="error">Failed to load trip data: ${err.message}</div>`;
