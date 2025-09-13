@@ -7,44 +7,50 @@ const DATABASE = 'public';
 const ENVIRONMENT = 'development'; // change to 'production' when ready
 const KEY_ID = 'd1bb78c89aa70961797b9e17e9c25dd876cf0a84f19d20a8b5d7a7bcb26954fa';
 
-// Replace literal "\n" with actual newlines
+// Load private key from environment and replace \n with real newlines
 const PRIVATE_KEY = process.env.CK_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
 if (!PRIVATE_KEY) {
   console.error('CK_PRIVATE_KEY missing or malformed!');
 }
 
+// Generate a short-lived JWT for CloudKit
 function generateJWT() {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: KEY_ID,
     iat: now,
-    exp: now + 300,
+    exp: now + 300, // valid for 5 minutes
     aud: 'https://apple-cloudkit.com',
   };
   return jwt.sign(payload, PRIVATE_KEY, { algorithm: 'ES256' });
 }
 
-// Helper to fetch a record by recordName
-async function fetchRecord(recordName, jwtToken) {
+// Lookup a single record by recordName
+async function fetchRecord(recordName) {
+  const jwtToken = generateJWT();
   const res = await fetch(
     `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/lookup`,
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${jwtToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ records: [{ recordName }] }), // <-- properly wrapped in object
+      body: JSON.stringify({ records: [{ recordName }] }),
     }
   );
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Lookup failed for ${recordName}: ${res.status} - ${text}`);
   }
+
   const data = await res.json();
   return data.records?.[0];
 }
 
-// Helper to query Top10PhotoEntries
-async function fetchPhotos(userRef, placeRef, jwtToken) {
+// Query Top10PhotoEntries for a user and place
+async function fetchPhotos(userRef, placeRef) {
+  const jwtToken = generateJWT();
+
   const res = await fetch(
     `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/query`,
     {
@@ -59,14 +65,17 @@ async function fetchPhotos(userRef, placeRef, jwtToken) {
       }),
     }
   );
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Photo query failed: ${res.status} - ${text}`);
   }
+
   const data = await res.json();
   return data.records || [];
 }
 
+// Main API handler
 export default async function handler(req, res) {
   const { trip } = req.query;
 
@@ -74,10 +83,8 @@ export default async function handler(req, res) {
 
   try {
     console.log('Fetching trip:', trip);
-    console.log("PRIVATE_KEY:", PRIVATE_KEY.slice(0,10), "...", PRIVATE_KEY.slice(-10));
-    const jwtToken = generateJWT();
+    const progressRecord = await fetchRecord(trip);
 
-    const progressRecord = await fetchRecord(trip, jwtToken);
     if (!progressRecord) return res.status(404).json({ error: 'Trip not found' });
 
     const userRef = progressRecord.fields?.user?.value?.recordName;
@@ -87,13 +94,14 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'User or Place reference missing in trip record' });
     }
 
+    // Fetch all relevant records in parallel
     const [userRecord, placeRecord, photoRecords] = await Promise.all([
-      fetchRecord(userRef, jwtToken),
-      fetchRecord(placeRef, jwtToken),
-      fetchPhotos(userRef, placeRef, jwtToken),
+      fetchRecord(userRef),
+      fetchRecord(placeRef),
+      fetchPhotos(userRef, placeRef),
     ]);
 
-    // Group photos by category
+    // Organize photos by category
     const categories = {};
     photoRecords.forEach((p) => {
       const cat = p.fields?.category?.value || 'Uncategorized';
@@ -107,6 +115,7 @@ export default async function handler(req, res) {
       });
     });
 
+    // Send JSON response
     res.status(200).json({
       tripId: progressRecord.recordName,
       tripName: `${placeRecord.fields?.name?.value || ''}, ${placeRecord.fields?.state?.value || ''}, ${placeRecord.fields?.country?.value || ''}`,
