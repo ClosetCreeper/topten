@@ -1,253 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopTen Trip</title>
+  <meta charset="UTF-8">
+  <title>Trip Page</title>
   <style>
     body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f8f9fa;
-      color: #222;
-    }
-
-    #tripContainer {
-      max-width: 900px;
-      margin: 2rem auto;
-      padding: 1rem;
-    }
-
-    .trip-card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 2rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-
-    .trip-card h1 {
-      font-size: 2rem;
-      margin-bottom: 0.25rem;
-      color: #2c3e50;
-    }
-
-    .trip-card .user {
-      margin: 0 0 1.5rem;
-      font-size: 1rem;
-      color: #555;
-    }
-
-    .stats {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin-bottom: 2rem;
-    }
-
-    .stat {
-      background: #f0f0f0;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      font-size: 0.9rem;
-    }
-
-    .category {
-      margin-bottom: 2rem;
-    }
-
-    .category h3 {
-      font-size: 1.25rem;
-      margin-bottom: 0.75rem;
+      padding: 0;
+      background: #f9f9fb;
       color: #333;
     }
-
-    .carousel {
-      position: relative;
-      overflow: hidden;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    }
-
-    .slide {
-      display: none;
-    }
-
-    .slide.active {
-      display: block;
-    }
-
-    .slide img {
-      width: 100%;
-      border-radius: 12px 12px 0 0;
-      display: block;
-    }
-
-    .caption {
-      margin: 0;
-      padding: 0.5rem;
-      background: #fafafa;
-      border-top: 1px solid #eee;
-      font-style: italic;
-      font-size: 0.9rem;
-      color: #444;
-    }
-
-    .carousel button {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(0,0,0,0.5);
+    header {
+      background: #4CAF50;
       color: #fff;
-      border: none;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    .carousel button.prev { left: 10px; }
-    .carousel button.next { right: 10px; }
-
-    .error {
+      padding: 20px;
       text-align: center;
-      margin: 3rem;
-      padding: 1rem;
-      color: #b00020;
-      background: #fdd;
-      border-radius: 8px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2em;
+    }
+    #progress {
+      margin: 20px auto;
+      padding: 15px;
+      max-width: 900px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .category {
+      margin: 30px auto;
+      max-width: 900px;
+    }
+    .category h2 {
+      margin-bottom: 10px;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 5px;
+      color: #4CAF50;
+    }
+    .photos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+    }
+    .photo-card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
+    }
+    .photo-card:hover {
+      transform: scale(1.02);
+    }
+    .photo-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .caption {
+      padding: 10px;
+      font-size: 0.9em;
+      background: #fafafa;
     }
   </style>
 </head>
 <body>
-  <main id="tripContainer"></main>
+  <header>
+    <h1 id="place-name">Loading...</h1>
+    <p id="user-name"></p>
+  </header>
 
-  <script type="module">
-    import { cloudKit } from "./cloudkit.js"; // use your real CK init
+  <div id="progress"></div>
+  <div id="categories"></div>
 
-    async function loadTrip() {
+  <script>
+    // === CloudKit Setup ===
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (!window.CloudKit) {
+        console.error("CloudKit library not found. Make sure CloudKit JS is embedded here if needed.");
+        return;
+      }
+
+      CloudKit.configure({
+        containers: [{
+          containerIdentifier: "iCloud.com.keyninestudios.TopTen",
+          apiTokenAuth: {
+            apiToken: "YOUR_API_TOKEN_HERE", // replace with your CloudKit API token
+            persist: true
+          },
+          environment: "development" // or "production"
+        }]
+      });
+
+      const container = CloudKit.getDefaultContainer();
+      const database = container.publicCloudDatabase;
+
       try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const tripId = urlParams.get("tripId");
-        if (!tripId) throw new Error("Missing tripId in URL.");
+        // Example fetch for one place — adjust query for your use case
+        let placeResp = await database.performQuery({ recordType: "Place" });
+        let photoResp = await database.performQuery({ recordType: "PhotoEntry" });
+        let userResp  = await database.performQuery({ recordType: "User" });
+        let progressResp = await database.performQuery({ recordType: "Progress" });
+
+        const place = placeResp.records[0];
+        const user = userResp.records[0];
+        const progress = progressResp.records[0];
+        const photos = photoResp.records;
+
+        // Fill header
+        document.getElementById("place-name").innerText = place.fields.name.value;
+        document.getElementById("user-name").innerText = "Explorer: " + user.fields.username.value;
 
         // Progress
-        const progressRes = await cloudKit.fetchRecords({
-          recordType: "Progress",
-          filterBy: [{ fieldName: "tripId", comparator: "EQUALS", value: tripId }],
-        });
-        if (!progressRes.records.length) throw new Error("Trip not found.");
-        const progress = progressRes.records[0].fields;
+        document.getElementById("progress").innerHTML = `
+          <h2>Progress</h2>
+          <p>Days Explored: ${progress.fields.daysExplored.value}</p>
+          <p>Miles Walked: ${progress.fields.milesWalked.value}</p>
+        `;
 
-        // Place
-        const placeRes = await cloudKit.fetchRecords({
-          recordType: "Place",
-          filterBy: [{ fieldName: "recordName", comparator: "EQUALS", value: progress.placeId.value }],
-        });
-        const place = placeRes.records[0]?.fields;
-
-        // User
-        const userRes = await cloudKit.fetchRecords({
-          recordType: "User",
-          filterBy: [{ fieldName: "recordName", comparator: "EQUALS", value: progress.userId.value }],
-        });
-        const user = userRes.records[0]?.fields;
-
-        // Photos
-        const entriesRes = await cloudKit.fetchRecords({
-          recordType: "PhotoEntry",
-          filterBy: [{ fieldName: "tripId", comparator: "EQUALS", value: tripId }],
+        // Categories
+        const categoriesDiv = document.getElementById("categories");
+        const grouped = {};
+        photos.forEach(p => {
+          const cat = p.fields.category.value;
+          if (!grouped[cat]) grouped[cat] = [];
+          grouped[cat].push(p);
         });
 
-        const categoriesMap = {};
-        for (const entry of entriesRes.records) {
-          const cat = entry.fields.category.value;
-          if (!categoriesMap[cat]) categoriesMap[cat] = { photos: [], captions: [] };
-          if (entry.fields.photoData?.value?.downloadURL) {
-            categoriesMap[cat].photos.push(entry.fields.photoData.value.downloadURL);
-            categoriesMap[cat].captions.push(entry.fields.caption?.value || "");
-          }
+        for (const [cat, entries] of Object.entries(grouped)) {
+          const section = document.createElement("div");
+          section.className = "category";
+          section.innerHTML = `<h2>${cat}</h2><div class="photos"></div>`;
+          const photosDiv = section.querySelector(".photos");
+
+          entries.forEach(entry => {
+            const card = document.createElement("div");
+            card.className = "photo-card";
+            card.innerHTML = `
+              <img src="${entry.fields.photoData.value.downloadURL}" alt="">
+              <div class="caption">${entry.fields.caption.value}</div>
+            `;
+            photosDiv.appendChild(card);
+          });
+
+          categoriesDiv.appendChild(section);
         }
 
-        const tripData = {
-          name: place?.name?.value || "Unknown Place",
-          user: user?.username?.value || "Anonymous",
-          stats: {
-            photosTaken: entriesRes.records.length,
-            daysExplored: progress.daysExplored?.value || 0,
-            milesWalked: progress.milesWalked?.value || 0,
-          },
-          categories: categoriesMap,
-        };
-
-        renderTrip(tripData);
       } catch (err) {
-        console.error("Error loading trip:", err);
-        document.getElementById("tripContainer").innerHTML =
-          `<div class="error">⚠️ We couldn’t load this trip. Please try again later.</div>`;
+        console.error("Error fetching data:", err);
+        document.body.innerHTML = "<p style='color:red; text-align:center;'>Error loading trip data.</p>";
       }
-    }
-
-    function renderTrip(trip) {
-      const container = document.getElementById("tripContainer");
-
-      let statsHtml = `
-        <div class="stat">📸 ${trip.stats.photosTaken} Photos</div>
-        <div class="stat">🗓️ ${trip.stats.daysExplored} Days</div>
-      `;
-      if (trip.stats.milesWalked > 0) {
-        statsHtml += `<div class="stat">🚶 ${trip.stats.milesWalked} Miles</div>`;
-      }
-
-      let categoriesHtml = "";
-      for (const [cat, data] of Object.entries(trip.categories)) {
-        categoriesHtml += `
-          <div class="category">
-            <h3>${cat}</h3>
-            <div class="carousel" data-category="${cat}">
-              ${data.photos.map((url, i) => `
-                <div class="slide ${i === 0 ? "active" : ""}">
-                  <img src="${url}" alt="${cat} photo"/>
-                  <p class="caption">${data.captions[i]}</p>
-                </div>`).join("")}
-              <button class="prev">←</button>
-              <button class="next">→</button>
-            </div>
-          </div>
-        `;
-      }
-
-      container.innerHTML = `
-        <div class="trip-card">
-          <h1>${trip.name}</h1>
-          <p class="user">By ${trip.user}</p>
-          <div class="stats">${statsHtml}</div>
-          <div class="categories">${categoriesHtml}</div>
-        </div>
-      `;
-
-      initCarousels();
-    }
-
-    function initCarousels() {
-      document.querySelectorAll(".carousel").forEach((carousel) => {
-        const slides = carousel.querySelectorAll(".slide");
-        let index = 0;
-        const update = () => {
-          slides.forEach((s, i) => s.classList.toggle("active", i === index));
-        };
-        carousel.querySelector(".prev").addEventListener("click", () => {
-          index = (index - 1 + slides.length) % slides.length;
-          update();
-        });
-        carousel.querySelector(".next").addEventListener("click", () => {
-          index = (index + 1) % slides.length;
-          update();
-        });
-      });
-    }
-
-    loadTrip();
+    });
   </script>
 </body>
 </html>
