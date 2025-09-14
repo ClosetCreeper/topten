@@ -26,7 +26,37 @@ function generateJWT() {
   return jwt.sign(payload, PRIVATE_KEY, { algorithm: 'ES256' });
 }
 
-// Lookup a single record by recordName
+// Lookup Top10UserProgress by webScheme instead of recordName
+async function fetchProgressByScheme(webScheme) {
+  const jwtToken = generateJWT();
+  const res = await fetch(
+    `https://api.apple-cloudkit.com/database/1/${CONTAINER}/${ENVIRONMENT}/${DATABASE}/records/query`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${jwtToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recordType: 'Top10UserProgress',
+        filterBy: [
+          {
+            fieldName: 'webScheme',
+            comparator: 'EQUALS',
+            fieldValue: { value: webScheme },
+          },
+        ],
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Progress query failed for ${webScheme}: ${res.status} - ${text}`);
+  }
+
+  const data = await res.json();
+  return data.records?.[0];
+}
+
+// Lookup a single record by recordName (used for User + Place)
 async function fetchRecord(recordName) {
   const jwtToken = generateJWT();
   const res = await fetch(
@@ -59,8 +89,16 @@ async function fetchPhotos(userRef, placeRef) {
       body: JSON.stringify({
         recordType: 'Top10PhotoEntries',
         filterBy: [
-          { fieldName: 'user', comparator: 'EQUALS', fieldValue: { value: { recordName: userRef, type: 'REFERENCE' } } },
-          { fieldName: 'place', comparator: 'EQUALS', fieldValue: { value: { recordName: placeRef, type: 'REFERENCE' } } },
+          {
+            fieldName: 'user',
+            comparator: 'EQUALS',
+            fieldValue: { value: { recordName: userRef, type: 'REFERENCE' } },
+          },
+          {
+            fieldName: 'place',
+            comparator: 'EQUALS',
+            fieldValue: { value: { recordName: placeRef, type: 'REFERENCE' } },
+          },
         ],
       }),
     }
@@ -77,13 +115,13 @@ async function fetchPhotos(userRef, placeRef) {
 
 // Main API handler
 export default async function handler(req, res) {
-  const { trip } = req.query;
+  const { trip } = req.query; // trip = webScheme string (e.g. "k1000")
 
-  if (!trip) return res.status(400).json({ error: 'Missing trip ID' });
+  if (!trip) return res.status(400).json({ error: 'Missing webScheme ID' });
 
   try {
-    console.log('Fetching trip:', trip);
-    const progressRecord = await fetchRecord(trip);
+    console.log('Fetching trip with webScheme:', trip);
+    const progressRecord = await fetchProgressByScheme(trip);
 
     if (!progressRecord) return res.status(404).json({ error: 'Trip not found' });
 
@@ -105,7 +143,9 @@ export default async function handler(req, res) {
     const categories = {};
     photoRecords.forEach((p) => {
       const cat = p.fields?.category?.value || 'Uncategorized';
-      if (!categories[cat]) categories[cat] = { photoURLs: [], captions: [], locations: [], coordinates: [] };
+      if (!categories[cat]) {
+        categories[cat] = { photoURLs: [], captions: [], locations: [], coordinates: [] };
+      }
       categories[cat].photoURLs.push(p.fields?.photoData?.value || '');
       categories[cat].captions.push(p.fields?.caption?.value || '');
       categories[cat].locations.push(p.fields?.location?.value || '');
@@ -118,6 +158,7 @@ export default async function handler(req, res) {
     // Send JSON response
     res.status(200).json({
       tripId: progressRecord.recordName,
+      webScheme: progressRecord.fields?.webScheme?.value || trip,
       tripName: `${placeRecord.fields?.name?.value || ''}, ${placeRecord.fields?.state?.value || ''}, ${placeRecord.fields?.country?.value || ''}`,
       tripDate: progressRecord.fields?.completedAt?.value || null,
       milesWalked: progressRecord.fields?.milesWalked?.value || 0,
@@ -125,7 +166,10 @@ export default async function handler(req, res) {
       userId: userRecord.recordName,
       username: userRecord.fields?.username?.value || 'Unknown',
       routeData: progressRecord.fields?.routeData?.value || [],
-      categories: Object.keys(categories).map((c) => ({ categoryName: c, ...categories[c] })),
+      categories: Object.keys(categories).map((c) => ({
+        categoryName: c,
+        ...categories[c],
+      })),
     });
 
   } catch (err) {
