@@ -38,7 +38,7 @@ async function fetchProgressByWebScheme(webScheme) {
 
 // Query Top10PhotoEntries by user and place references
 async function fetchPhotosByUserAndPlace(userRef, placeRef) {
-  const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/development/public/records/query?ckAPIToken=${CK_API_TOKEN}`;
+  const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/production/public/records/query?ckAPIToken=${CK_API_TOKEN}`;
   
   const body = {
     query: {
@@ -76,7 +76,7 @@ async function fetchPhotosByUserAndPlace(userRef, placeRef) {
 
 // Get user details by reference
 async function fetchUserDetails(userRef) {
-  const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/development/public/records/lookup?ckAPIToken=${CK_API_TOKEN}`;
+  const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/production/public/records/lookup?ckAPIToken=${CK_API_TOKEN}`;
   
   const body = {
     records: [
@@ -103,7 +103,7 @@ async function fetchUserDetails(userRef) {
 
 // Get place details by reference
 async function fetchPlaceDetails(placeRef) {
-  const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/development/public/records/lookup?ckAPIToken=${CK_API_TOKEN}`;
+  const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/production/public/records/lookup?ckAPIToken=${CK_API_TOKEN}`;
   
   const body = {
     records: [
