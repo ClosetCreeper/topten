@@ -38,14 +38,16 @@ async function fetchPhotosByTripScheme(tripScheme) {
   const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/development/public/records/query?ckAPIToken=${CK_API_TOKEN}`;
   
   const body = {
-    recordType: 'TripPhoto',
-    filterBy: [
-      {
-        fieldName: 'tripScheme',
-        comparator: 'EQUALS',
-        fieldValue: { value: tripScheme }
-      }
-    ]
+    query: {
+      recordType: 'TripPhoto',
+      filterBy: [
+        {
+          fieldName: 'tripScheme',
+          comparator: 'EQUALS',
+          fieldValue: { value: tripScheme }
+        }
+      ]
+    }
   };
   
   const response = await fetch(url, {
@@ -66,10 +68,15 @@ async function fetchPhotosByTripScheme(tripScheme) {
 // Vercel handler
 module.exports = async (req, res) => {
   try {
+    console.log('Query params:', req.query); // Debug log
     const { tripScheme } = req.query;
     
     if (!tripScheme) {
-      res.status(400).json({ error: 'Missing tripScheme parameter' });
+      console.log('tripScheme is missing or undefined:', tripScheme);
+      res.status(400).json({ 
+        error: 'Missing tripScheme parameter',
+        receivedParams: req.query 
+      });
       return;
     }
 
