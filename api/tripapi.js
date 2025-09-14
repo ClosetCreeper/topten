@@ -1,7 +1,7 @@
 // api/tripapi.js
 const fetch = require('node-fetch');
 const CK_CONTAINER = "iCloud.keyninestudios.topten"; 
-const CK_API_TOKEN = "1bab850cbdcaffa45d64df96aa7ac56781f0028a3f34dddb58276819a7859e59";
+const CK_API_TOKEN = "87fad2c397513d683659124ee5317d117d6af88b1b1c35fa6d98c27e46568eed";
 
 // Query Top10UserProgress by webScheme field
 async function fetchProgressByWebScheme(webScheme) {
