@@ -5,7 +5,7 @@ const CK_API_TOKEN = "87fad2c397513d683659124ee5317d117d6af88b1b1c35fa6d98c27e46
 
 // Query Top10UserProgress by webScheme field
 async function fetchProgressByWebScheme(webScheme) {
-  const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/development/public/records/query?ckAPIToken=${CK_API_TOKEN}`;
+  const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/production/public/records/query?ckAPIToken=${CK_API_TOKEN}`;
   
   const body = {
     query: {
