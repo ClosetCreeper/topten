@@ -14,25 +14,21 @@
 <body>
 <h1>Trip Details</h1>
 <div id="trip-info">Loading...</div>
-
 <script>
 async function loadTrip(tripId) {
   try {
-    // Adjusted fetch path for Vercel API routes
-    const res = await fetch(`/api/tripapi?trip=${tripId}`);
+    // Fixed: Changed from trip= to tripScheme=
+    const res = await fetch(`/api/tripapi?tripScheme=${tripId}`);
     const data = await res.json();
-
     if (data.error) {
       document.getElementById('trip-info').textContent = data.error;
       return;
     }
-
     let html = `<p><strong>User:</strong> ${data.username}</p>`;
     html += `<p><strong>Trip:</strong> ${data.tripName}</p>`;
     html += `<p><strong>Date:</strong> ${data.tripDate || 'N/A'}</p>`;
     html += `<p><strong>Miles Walked:</strong> ${data.milesWalked}</p>`;
     html += `<p><strong>Photos:</strong> ${data.photoCount}</p>`;
-
     data.categories.forEach(cat => {
       html += `<div class="category"><h3>${cat.categoryName}</h3>`;
       cat.photoURLs.forEach((url, i) => {
@@ -43,14 +39,12 @@ async function loadTrip(tripId) {
       });
       html += `</div>`;
     });
-
     document.getElementById('trip-info').innerHTML = html;
   } catch (err) {
     document.getElementById('trip-info').textContent = 'Error loading trip: ' + err.message;
     console.error(err);
   }
 }
-
 // Example trip ID
 loadTrip('k1000');
 </script>
