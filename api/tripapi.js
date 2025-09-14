@@ -3,19 +3,22 @@ const fetch = require('node-fetch');
 const CK_CONTAINER = "iCloud.keyninestudios.topten"; 
 const CK_API_TOKEN = "1bab850cbdcaffa45d64df96aa7ac56781f0028a3f34dddb58276819a7859e59";
 
-// Query user progress by tripScheme
-async function fetchProgressByTripScheme(tripScheme) {
+// Query Top10UserProgress by webScheme field
+async function fetchProgressByWebScheme(webScheme) {
   const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/development/public/records/query?ckAPIToken=${CK_API_TOKEN}`;
   
   const body = {
-    recordType: 'Top10UserProgress',
-    filterBy: [
-      {
-        fieldName: 'tripScheme',
-        comparator: 'EQUALS',
-        fieldValue: { value: tripScheme }
-      }
-    ]
+    query: {
+      recordType: 'Top10UserProgress',
+      filterBy: [
+        {
+          fieldName: 'webScheme',
+          comparator: 'EQUALS',
+          fieldValue: { value: webScheme }
+        }
+      ]
+    },
+    zoneID: { zoneName: '_defaultZone' }
   };
   
   const response = await fetch(url, {
@@ -26,28 +29,34 @@ async function fetchProgressByTripScheme(tripScheme) {
   
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Progress query failed for ${tripScheme}: ${response.status} - ${text}`);
+    throw new Error(`Progress query failed for ${webScheme}: ${response.status} - ${text}`);
   }
   
   const result = await response.json();
   return result.records?.[0] || null;
 }
 
-// Query photos tied to a trip scheme
-async function fetchPhotosByTripScheme(tripScheme) {
+// Query Top10PhotoEntries by user and place references
+async function fetchPhotosByUserAndPlace(userRef, placeRef) {
   const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/development/public/records/query?ckAPIToken=${CK_API_TOKEN}`;
   
   const body = {
     query: {
-      recordType: 'TripPhoto',
+      recordType: 'Top10PhotoEntries',
       filterBy: [
         {
-          fieldName: 'tripScheme',
+          fieldName: 'user',
           comparator: 'EQUALS',
-          fieldValue: { value: tripScheme }
+          fieldValue: { value: userRef }
+        },
+        {
+          fieldName: 'place',
+          comparator: 'EQUALS',
+          fieldValue: { value: placeRef }
         }
       ]
-    }
+    },
+    zoneID: { zoneName: '_defaultZone' }
   };
   
   const response = await fetch(url, {
@@ -65,6 +74,60 @@ async function fetchPhotosByTripScheme(tripScheme) {
   return result.records || [];
 }
 
+// Get user details by reference
+async function fetchUserDetails(userRef) {
+  const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/development/public/records/lookup?ckAPIToken=${CK_API_TOKEN}`;
+  
+  const body = {
+    records: [
+      {
+        recordName: userRef.recordName
+      }
+    ]
+  };
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`User lookup failed: ${response.status} - ${text}`);
+  }
+  
+  const result = await response.json();
+  return result.records?.[0] || null;
+}
+
+// Get place details by reference
+async function fetchPlaceDetails(placeRef) {
+  const url = `https://api.apple-cloudkit.com/database/1/${CK_CONTAINER}/development/public/records/lookup?ckAPIToken=${CK_API_TOKEN}`;
+  
+  const body = {
+    records: [
+      {
+        recordName: placeRef.recordName
+      }
+    ]
+  };
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Place lookup failed: ${response.status} - ${text}`);
+  }
+  
+  const result = await response.json();
+  return result.records?.[0] || null;
+}
+
 // Vercel handler
 module.exports = async (req, res) => {
   try {
@@ -80,42 +143,59 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Get user progress
-    const progress = await fetchProgressByTripScheme(tripScheme);
+    // Get user progress by webScheme
+    const progress = await fetchProgressByWebScheme(tripScheme);
     if (!progress) {
-      res.status(404).json({ error: `No progress found for tripScheme ${tripScheme}` });
+      res.status(404).json({ error: `No progress found for webScheme ${tripScheme}` });
       return;
     }
 
-    const username = progress.fields?.username?.value || 'Unknown User';
-    const tripName = progress.fields?.tripName?.value || 'Unknown Trip';
-    const tripDate = progress.fields?.tripDate?.value || null;
-    const milesWalked = progress.fields?.milesWalked?.value || 0;
+    // Get user and place references
+    const userRef = progress.fields?.user?.value;
+    const placeRef = progress.fields?.place?.value;
+    
+    if (!userRef || !placeRef) {
+      res.status(500).json({ error: 'Missing user or place reference in progress record' });
+      return;
+    }
 
-    // Fetch photos for the trip scheme
-    const photos = await fetchPhotosByTripScheme(tripScheme);
+    // Fetch user and place details
+    const [userDetails, placeDetails] = await Promise.all([
+      fetchUserDetails(userRef),
+      fetchPlaceDetails(placeRef)
+    ]);
+
+    const username = userDetails?.fields?.username?.value || 'Unknown User';
+    const placeName = placeDetails?.fields?.name?.value || 'Unknown Place';
+    const completedAt = progress.fields?.completedAt?.value || null;
+    const completedCategories = progress.fields?.completedCategories?.value || [];
+
+    // Fetch photos for this user and place
+    const photos = await fetchPhotosByUserAndPlace(userRef, placeRef);
     
     const categoriesMap = {};
     photos.forEach(p => {
       const cat = p.fields?.category?.value || 'Uncategorized';
-      const url = p.fields?.photo?.value.downloadURL;
+      const photoData = p.fields?.photoData?.value; // This is Data, not a URL
       const caption = p.fields?.caption?.value || '';
       
       if (!categoriesMap[cat]) {
-        categoriesMap[cat] = { categoryName: cat, photoURLs: [], captions: [] };
+        categoriesMap[cat] = { categoryName: cat, photos: [] };
       }
       
-      categoriesMap[cat].photoURLs.push(url);
-      categoriesMap[cat].captions.push(caption);
+      categoriesMap[cat].photos.push({
+        data: photoData,
+        caption: caption
+      });
     });
 
     const categories = Object.values(categoriesMap);
 
     res.status(200).json({
       username,
-      tripName,
-      tripDate,
-      milesWalked,
+      placeName,
+      completedAt,
+      completedCategories,
       photoCount: photos.length,
       categories
     });
