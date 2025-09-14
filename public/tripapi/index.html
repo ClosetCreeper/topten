@@ -498,11 +498,14 @@ async function loadTrip(tripScheme) {
 
     document.getElementById('trip-content').innerHTML = html;
 
+    // Store trip data globally for modal access
+    window.tripData = data;
+
     // Initialize carousels for each category
     data.categories.forEach((cat, index) => {
       const categoryElement = document.querySelector(`[data-category-index="${index}"]`);
       if (categoryElement && cat.photos.length > 0) {
-        initializeCarousel(categoryElement, cat.photos);
+        initializeCarousel(categoryElement, cat.photos, index);
       }
     });
 
