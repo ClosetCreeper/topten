@@ -176,7 +176,7 @@ module.exports = async (req, res) => {
     const categoriesMap = {};
     photos.forEach(p => {
       const cat = p.fields?.category?.value || 'Uncategorized';
-      const photoData = p.fields?.photoData?.value; // This is Data, not a URL
+      const photo = p.fields?.photo?.value; // This is a CKAsset
       const caption = p.fields?.caption?.value || '';
       
       if (!categoriesMap[cat]) {
@@ -184,7 +184,7 @@ module.exports = async (req, res) => {
       }
       
       categoriesMap[cat].photos.push({
-        data: photoData,
+        photo: photo, // Changed from 'data' to 'photo'
         caption: caption
       });
     });
