@@ -5,48 +5,312 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Top 10 Trip</title>
 <style>
-  body { font-family: sans-serif; margin: 20px; background: #f2f2f2; }
-  h1 { color: #333; }
-  .category { margin-bottom: 20px; }
-  .photo { max-width: 200px; margin: 5px; display: inline-block; }
+  body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    margin: 0; 
+    padding: 20px; 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+  
+  .header {
+    background: linear-gradient(45deg, #2c3e50, #34495e);
+    color: white;
+    padding: 30px;
+    text-align: center;
+  }
+  
+  h1 { 
+    margin: 0;
+    font-size: 2.5em;
+    font-weight: 300;
+  }
+  
+  .trip-info {
+    padding: 30px;
+  }
+  
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+  
+  .info-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+  }
+  
+  .info-label {
+    font-size: 0.9em;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+  }
+  
+  .info-value {
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+  
+  .category {
+    margin-bottom: 40px;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  
+  .category-header {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    padding: 20px;
+    font-size: 1.5em;
+    font-weight: 600;
+  }
+  
+  .photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  .photo-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+  }
+  
+  .photo-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .photo-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+  }
+  
+  .photo-caption {
+    padding: 15px;
+    font-size: 0.9em;
+    color: #666;
+    line-height: 1.4;
+  }
+  
+  .loading {
+    text-align: center;
+    padding: 60px;
+    font-size: 1.2em;
+    color: #666;
+  }
+  
+  .error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px;
+  }
+  
+  .completed-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .category-badge {
+    background: #667eea;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+  }
+  
+  @media (max-width: 768px) {
+    .photos-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    h1 {
+      font-size: 2em;
+    }
+  }
 </style>
 </head>
 <body>
-<h1>Trip Details</h1>
-<div id="trip-info">Loading...</div>
+<div class="container">
+  <div class="header">
+    <h1>🏆 Top 10 Trip Details</h1>
+  </div>
+  
+  <div class="trip-info">
+    <div id="trip-content">
+      <div class="loading">📸 Loading trip details...</div>
+    </div>
+  </div>
+</div>
+
 <script>
-async function loadTrip(tripId) {
+// Function to convert base64 data to blob URL for images
+function createImageUrl(base64Data) {
   try {
-    // Fixed: Changed from trip= to tripScheme=
-    const res = await fetch(`/api/tripapi?tripScheme=${tripId}`);
+    // CloudKit returns base64 data, convert to blob
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/jpeg' });
+    return URL.createObjectURL(blob);
+  } catch (error) {
+    console.error('Error creating image URL:', error);
+    return null;
+  }
+}
+
+async function loadTrip(tripScheme) {
+  try {
+    const res = await fetch(`/api/tripapi?tripScheme=${tripScheme}`);
     const data = await res.json();
+    
     if (data.error) {
-      document.getElementById('trip-info').textContent = data.error;
+      document.getElementById('trip-content').innerHTML = `
+        <div class="error">
+          <strong>Error:</strong> ${data.error}
+        </div>
+      `;
       return;
     }
-    let html = `<p><strong>User:</strong> ${data.username}</p>`;
-    html += `<p><strong>Trip:</strong> ${data.tripName}</p>`;
-    html += `<p><strong>Date:</strong> ${data.tripDate || 'N/A'}</p>`;
-    html += `<p><strong>Miles Walked:</strong> ${data.milesWalked}</p>`;
-    html += `<p><strong>Photos:</strong> ${data.photoCount}</p>`;
-    data.categories.forEach(cat => {
-      html += `<div class="category"><h3>${cat.categoryName}</h3>`;
-      cat.photoURLs.forEach((url, i) => {
-        html += `<div class="photo">
-                  <img src="data:image/jpeg;base64,${url}" width="150" />
-                  <p>${cat.captions[i]}</p>
-                 </div>`;
+
+    // Format completed date
+    const completedDate = data.completedAt ? 
+      new Date(data.completedAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }) : 'Not completed';
+
+    // Build info grid
+    let html = `
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-label">Traveler</div>
+          <div class="info-value">${data.username}</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Destination</div>
+          <div class="info-value">${data.placeName}</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Completed</div>
+          <div class="info-value">${completedDate}</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Total Photos</div>
+          <div class="info-value">${data.photoCount}</div>
+        </div>
+      </div>
+    `;
+
+    // Add completed categories if any
+    if (data.completedCategories && data.completedCategories.length > 0) {
+      html += `
+        <div class="info-card" style="margin-bottom: 30px;">
+          <div class="info-label">Completed Categories</div>
+          <div class="completed-categories">
+            ${data.completedCategories.map(cat => 
+              `<span class="category-badge">${cat}</span>`
+            ).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // Add photo categories
+    if (data.categories && data.categories.length > 0) {
+      data.categories.forEach(cat => {
+        html += `
+          <div class="category">
+            <div class="category-header">
+              📷 ${cat.categoryName} (${cat.photos.length} photos)
+            </div>
+            <div class="photos-grid">
+        `;
+        
+        cat.photos.forEach(photo => {
+          if (photo.data) {
+            const imageUrl = createImageUrl(photo.data);
+            if (imageUrl) {
+              html += `
+                <div class="photo-card">
+                  <img src="${imageUrl}" alt="${cat.categoryName}" loading="lazy" />
+                  ${photo.caption ? `<div class="photo-caption">${photo.caption}</div>` : ''}
+                </div>
+              `;
+            }
+          }
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
       });
-      html += `</div>`;
-    });
-    document.getElementById('trip-info').innerHTML = html;
+    } else {
+      html += `
+        <div class="info-card">
+          <div class="info-value">No photos found for this trip.</div>
+        </div>
+      `;
+    }
+
+    document.getElementById('trip-content').innerHTML = html;
+
   } catch (err) {
-    document.getElementById('trip-info').textContent = 'Error loading trip: ' + err.message;
+    document.getElementById('trip-content').innerHTML = `
+      <div class="error">
+        <strong>Error loading trip:</strong> ${err.message}
+      </div>
+    `;
     console.error(err);
   }
 }
-// Example trip ID
-loadTrip('k1000');
+
+// Get tripScheme from URL parameters or use default
+function getTripSchemeFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('tripScheme') || 'k1000';
+}
+
+// Load trip when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  const tripScheme = getTripSchemeFromUrl();
+  loadTrip(tripScheme);
+});
 </script>
 </body>
 </html>
