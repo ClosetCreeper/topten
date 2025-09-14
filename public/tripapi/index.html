@@ -262,28 +262,13 @@ async function loadTrip(tripScheme) {
         `;
         
         cat.photos.forEach(photo => {
-          console.log('Photo object:', photo); // Debug log
-          if (photo.photo) {
-            const imageUrl = createImageUrl(photo.photo);
-            if (imageUrl) {
-              html += `
-                <div class="photo-card">
-                  <img src="${imageUrl}" alt="${cat.categoryName}" loading="lazy" 
-                       onerror="this.style.display='none'; console.log('Failed to load image:', '${imageUrl}');" />
-                  ${photo.caption ? `<div class="photo-caption">${photo.caption}</div>` : ''}
-                </div>
-              `;
-            } else {
-              // Show placeholder if image can't be loaded
-              html += `
-                <div class="photo-card">
-                  <div style="height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;">
-                    📷 No image URL found
-                  </div>
-                  ${photo.caption ? `<div class="photo-caption">${photo.caption}</div>` : ''}
-                </div>
-              `;
-            }
+          if (photo.photo && photo.photo.downloadURL) {
+            html += `
+              <div class="photo-card">
+                <img src="${photo.photo.downloadURL}" alt="${cat.categoryName}" loading="lazy" />
+                ${photo.caption ? `<div class="photo-caption">${photo.caption}</div>` : ''}
+              </div>
+            `;
           }
         });
         
