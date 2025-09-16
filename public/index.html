@@ -3,26 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Top 10 – Coming Soon</title>
+  <title>Top 10 – Explore. Capture. Collect.</title>
 
   <meta name="apple-itunes-app" content="app-id=6746877152">
-  
+
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-V816FB69WH"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
     gtag('config', 'G-V816FB69WH');
   </script>
 
-
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
@@ -32,112 +27,98 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 2rem;
     }
 
-    .container {
+    header {
+      width: 100%;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 3.5rem;
+      font-weight: 900;
+      margin: 0;
+      background: linear-gradient(to right, #fff, #d6b4ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p {
+      font-size: 1.25rem;
+      max-width: 600px;
+      margin: 1rem auto 0;
+      line-height: 1.6;
+      color: #e9e9e9;
+    }
+
+    .cta-buttons {
+      margin-top: 2rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .cta-buttons a img {
+      height: 60px;
+      transition: transform 0.2s ease;
+    }
+    .cta-buttons a:hover img { transform: scale(1.05); }
+
+    .screenshot-section {
       display: flex;
       flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+      margin: 4rem auto;
+      max-width: 1200px;
+      padding: 0 2rem;
+    }
+
+    .screenshot {
+      flex: 1 1 300px;
       background: #fff;
-      color: #222;
       border-radius: 20px;
       overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      max-width: 1100px;
-      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      transition: transform 0.25s ease;
     }
+    .screenshot:hover { transform: translateY(-8px); }
 
-    .left {
-      flex: 1 1 50%;
-      background: linear-gradient(to bottom right, #eae6ff, #f9f9ff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .left img {
+    .screenshot img {
       width: 100%;
-      height: auto;
-      object-fit: contain;
       display: block;
-      padding: 2rem;
     }
 
-    .right {
-      flex: 1 1 50%;
-      padding: 3rem;
-      background: #fefefe;
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+    .screenshot .text {
+      padding: 1.5rem;
+      color: #222;
     }
 
-    h1 {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      font-weight: 900;
+    .screenshot .text h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
       color: #6f00ff;
     }
 
-    p.description {
-      font-size: 1.1rem;
-      line-height: 1.6;
-      margin-bottom: 2rem;
+    .screenshot .text p {
+      font-size: 1rem;
+      line-height: 1.5;
       color: #444;
     }
 
-    .badge {
-      background: #eae0ff;
-      border-left: 5px solid #6f00ff;
-      padding: 1rem;
-      border-radius: 8px;
-      font-size: 1rem;
-      margin-bottom: 2rem;
-      color: #333;
-    }
-
-    .form-wrapper {
-      z-index: 2;
-      position: relative;
-    }
-
-    .formkit-form {
-      display: block !important;
-      max-width: 100%;
-      z-index: 5;
-      position: relative;
-    }
-
-    .formkit-field,
-    input[type="email"] {
-      font-size: 1rem;
-      padding: 0.75rem;
-      margin-bottom: 1rem;
-      border: 1px solid #ccc;
-      width: 100%;
-      border-radius: 6px;
-    }
-
-    .formkit-submit {
-      background-color: #6f00ff;
-      color: white;
-      font-weight: bold;
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1rem;
+    footer {
+      text-align: center;
+      padding: 2rem;
     }
 
     .social-footer {
       display: flex;
       justify-content: center;
       gap: 1.5rem;
-      margin-top: 2rem;
-      padding-bottom: 1rem;
+      margin-bottom: 1rem;
       flex-wrap: wrap;
     }
 
@@ -153,85 +134,72 @@
     }
 
     .legal-link {
-      text-align: center;
-      margin-top: 1rem;
       font-size: 0.95rem;
+      margin-top: 1rem;
     }
 
     .legal-link a {
       color: #fff;
       text-decoration: underline;
     }
-
-    @media (max-width: 900px) {
-      .container {
-        flex-direction: column;
-      }
-
-      .left, .right {
-        flex: 1 1 100%;
-      }
-
-      .right {
-        padding: 2rem;
-      }
-
-      h1 {
-        font-size: 2.2rem;
-      }
-    }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <!-- Left side: Image -->
-    <div class="left">
-      <img src="screenshot.png" alt="Checkmark App Screenshot">
+  <header>
+    <h1>Top 10</h1>
+    <p>
+      A gamified passport app that turns cities into curated adventures. 
+      Snap photos, earn digital stamps, and unlock rewards as you explore 
+      your world in 10 unique lifestyle categories.
+    </p>
+    <div class="cta-buttons">
+      <a href="https://topten.keyninestudios.com/download" target="_blank">
+        <img src="black.svg" alt="Download on the App Store">
+      </a>
     </div>
+  </header>
 
-    <!-- Right side: Text + Form -->
-    <div class="right">
-      <h1>Top 10</h1>
-      <p class="description">
-        Top 10 is a gamified passport app that turns cities into curated adventures. 
-        Complete and curate pictures across 10 lifestyle categories — like Art, History, 
-        Culture, Dining — to earn digital stamps, unlock hidden rewards, and share your journey.
-      </p>
-      <p class="description">
-        Whether you're discovering your hometown or traveling somewhere new, Top 10 helps you go deeper, 
-        not just farther.
-      </p>
-
-      <div class="badge">
-        🎖️ Be one of the first 25 explorers to download the app and get the exclusive  
-        <strong>Uncharted Founders Badge.</strong>
-      </div>
-
-      <div class="form-wrapper">
-        <!-- ConvertKit Form -->
-        <script async src="https://subscribe-forms.beehiiv.com/embed.js"></script><iframe src="https://subscribe-forms.beehiiv.com/9a5b5154-abe2-4a41-bb81-8f6a386ba5d8" class="beehiiv-embed" data-test-id="beehiiv-embed" frameborder="0" scrolling="no" style="width: 660px; height: 565px; margin: 0; border-radius: 0px 0px 0px 0px !important; background-color: transparent; box-shadow: 0 0 #0000; max-width: 100%;"></iframe>
+  <section class="screenshot-section">
+    <div class="screenshot">
+      <img src="explore.png" alt="Discover Categories">
+      <div class="text">
+        <h2>📍 Explore</h2>
+        <p>From art to dining, unlock the best of every city through curated challenges.</p>
       </div>
     </div>
-  </div>
+    <div class="screenshot">
+      <img src="collect.png" alt="Earn Stamps">
+      <div class="text">
+        <h2>🎖️ Collect</h2>
+        <p>Complete photo checklists and earn stamps for your digital passport.</p>
+      </div>
+    </div>
+    <div class="screenshot">
+      <img src="passport.png" alt="Share Your Journey">
+      <div class="text">
+        <h2>🌍 Share</h2>
+        <p>Show off your passport, compare journeys, and inspire your friends.</p>
+      </div>
+    </div>
+  </section>
 
-  <!-- Terms and Conditions Link -->
-  <div class="legal-link" style="display: flex; gap: 1rem;">
-    <a href="https://topten.keyninestudios.com/raffle-rules.html" target="_blank">Terms and Conditions</a>
-    <a href="https://topten.keyninestudios.com/raffle.html" target="_blank">Enter the Raffle</a>
-  </div>
-
-  <!-- Social Footer -->
-  <footer class="social-footer">
-    <a href="https://instagram.com/keyninestudios" target="_blank" aria-label="Instagram">
-      <img src="instagram.png" alt="Instagram" />
-    </a>
-    <a href="https://youtube.com/@keyninestudios" target="_blank" aria-label="YouTube">
-      <img src="youtube.png" alt="Instagram" />
-    </a>
-    <a href="https://x.com/keyninestudios" target="_blank" aria-label="X">
-      <img src="x.png" alt="Instagram" />
-    </a>
+  <footer>
+    <div class="social-footer">
+      <a href="https://instagram.com/keyninestudios" target="_blank" aria-label="Instagram">
+        <img src="instagram.png" alt="Instagram" />
+      </a>
+      <a href="https://youtube.com/@keyninestudios" target="_blank" aria-label="YouTube">
+        <img src="youtube.png" alt="YouTube" />
+      </a>
+      <a href="https://x.com/keyninestudios" target="_blank" aria-label="X">
+        <img src="x.png" alt="X" />
+      </a>
+    </div>
+    <div class="legal-link">
+      <a href="https://topten.keyninestudios.com/terms-of-service.html" target="_blank">Terms and Conditions</a> · 
+      <a href="https://topten.keyninestudios.com/privacy.html" target="_blank">Privacy Policy</a>
+    </div>
   </footer>
 
 </body>
