@@ -1,10 +1,9 @@
 {
   "version": 2,
   "rewrites": [
-    {
-      "source": "/trip/:id",
-      "destination": "/trip.html"
-    }
+    {"source": "/trip/:id", "destination": "/trip.html"}
+    { "source": "/photo/share/:photoID", "destination": "/photo/share/index.html" }
+  ]
   ],
   "headers": [
     {
